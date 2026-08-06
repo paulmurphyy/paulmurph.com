@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <title>paulmurph.com</title>
     <style>
+      body { 
+        background: transparent; 
+      }
+      #bg {
+        position: fixed;
+        inset: -40vh 0;
+        z-index: -1;
+        background: url("https://travelweekly.com.au/wp-content/uploads/2019/02/iStock-909110518.jpg") center / cover;
+        will-change: transform;
+        filter: brightness(80%);
+      }
+      @supports (animation-timeline: scroll()) {
+        #bg { animation: parallax linear both; animation-timeline: scroll(root); }
+      }
+      @keyframes parallax { to { translate: 0 -40vh; } }
       ul {
         list-style-type: none;
         padding-left: 20px;
@@ -12,22 +27,33 @@
         content: "-";
         margin-right: 5px;
       }
+      i {
+        display: block;
+      }
       summary {
         width: 100%;
+        background: none;
+        cursor: pointer;
       }
-      summary:hover, summary:focus {
-        text-decoration: none;
-      }
-      summary h3 {
+      summary:hover, details[open] summary { background: color-mix(in srgb, var(--background-alt) 40%, transparent); text-decoration: none; }
+      summary:focus { text-decoration: none; }
+      h3 {
         display: inline;
+      }
+      details, .section {
+        background: color-mix(in srgb, var(--background) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+        border-radius: 6px;
+        padding: 10px 10px 0;
+        margin: 1em 0;
       }
     </style>
   </head>
   <body>
-    <div id='navbar'></div>
+    <div id='bg'></div>
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
-    <details>
+    <details open>
       <summary><h3>regional planning internship at metroplan in little rock (7/2026 - 8/2026)</h3></summary>
       <h4>transit oriented development (TOD) and infill development readiness study for little rock and north little rock (8/2026)</h4>
       <i>unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool</i>
@@ -76,26 +102,44 @@
         <li><a href='precinct_map.pdf'>precinct map</a></li>
       </ul>
     </details>
-    <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
-    <ul>
-      <li><a href='research paper.pdf'>research paper</a></li>
-      <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
-    </ul>
+    <div class="section">
+        <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
+        <ul>
+            <li><a href='research paper.pdf'>research paper</a></li>
+            <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
+        </ul>
+    </div>
+    <div class="section">
     <h3>safeblue - a safety api for chicago (2/2026)</h3>
     <i>an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation</i>
     <ul>
       <li><a href='https://github.com/apizarro18/SafeBlue'>repository</a></li>
     </ul>
+    </div>
+    <div class="section">
     <h3>custom mouse project (present)</h3>
     <i>currently a work in progress, pcb design finished</i>
     <ul>
       <li><a href='https://github.com/paulmurphyy/mouse-project'>repository</a></li>
     </ul>
+    </div>
+    <div class="section">
     <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h3>
     <i>currently deployed on an aws instance that makes the service available to the web.</i>
     <ul>
       <li><a href='https://schedulemyshift.com'>webapp</a></li>
       <li><a href='https://github.com/paulmurphyy/reflex-work-scheduler'>repository</a></li>
     </ul>
+    </div>
   </body>
+  <script>
+    if (!CSS.supports('animation-timeline: scroll()')) {
+      const bg = document.getElementById('bg'), d = document.documentElement;
+      addEventListener('scroll', () => {
+        const max = d.scrollHeight - innerHeight;
+        const y = max > 0 ? (scrollY / max) * innerHeight * 0.4 : 0;   // 0.4 ↔ 40vh
+        bg.style.transform = `translate3d(0, ${-y}px, 0)`;
+      }, { passive: true });
+    }
+  </script>
 </html>
