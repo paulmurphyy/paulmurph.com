@@ -12,32 +12,90 @@
         content: "-";
         margin-right: 5px;
       }
+      summary {
+        width: 100%;
+      }
+      summary:hover, summary:focus {
+        text-decoration: none;
+      }
+      summary h3 {
+        display: inline;
+      }
     </style>
   </head>
   <body>
     <div id='navbar'></div>
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
-    <h3>safeblue - a safety api for chicago (present)</h4>
+    <details>
+      <summary><h3>regional planning internship at metroplan in little rock (7/2026 - 8/2026)</h3></summary>
+      <h4>transit oriented development (TOD) and infill development readiness study for little rock and north little rock (8/2026)</h4>
+      <i>unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool</i>
+      <ul>
+        <li><a href='tod_infill_report.pdf'>report</a></li>
+        <li><a href='final_score.png'>final result heatmap</a></li>
+        <li><a href='brt_routes_high_potential_areas.png'>example implementation - proposed BRT routes and high potential TOD areas</a></li>
+        <li><a href='brt_routes_jobs.png'>example implementation - BRT routes jobs per mile</a></li>
+        <li><a href='brt_routes_pop.png'>example implementation - BRT routes population per mile</a></li>
+        <li><a href='redevelopment_potential_map.png'>example factor in final result - redevelopment potential</a></li>
+        <li><a href='weighted_tod_score.png'>TOD result heatmap</a></li>
+      </ul>
+      <h4>unofficial central arkansas 2055 population estimates from households projection model (8/2026)</h4>
+      <i>built a households projection model at the parcel level with ai and used the projections to generate unofficial central arkansas population estimates for 2055</i>
+      <ul>
+        <li><a href='https://github.com/paulmurphyy/ar_county_projections'>repository</a></li>
+        <li><a href='population_estimates_central_arkansas.xlsx'>population esimates spreadsheet</a></li>
+      </ul>
+      <h4>using optical character recognition (OCR) and large language models (LLMs) to locally extract fields from scanned documents (7/2026)</h4>
+      <i>created a python pipeline that uses paddleocr and ollama to locally extract and turn fields from a scanned document into json or other formats</i>
+      <ul>
+        <li><a href='https://github.com/paulmurphyy/document-parser'>repository</a></li>
+      </ul>
+      <h4>pulaski county land use projections vs actual census data (7/2026)</h4>
+      <i>mapping pulaski county projected land uses (2020) extracted from 1970 census tables vs actual land uses from 2023</i>
+      <ul>
+        <li><a href='overperforming_tracts_comercial_projections.png'>overperforming tracts from 2020 commercial land use projections</a></li>
+        <li><a href='overperforming_tracts_residential_projections.png'>overperforming tracts from 2020 residential land use projections</a></li>
+        <li><a href='overperforming_tracts_industrial_projections.png'>overperforming tracts from 2020 industrial land use projections</a></li>
+        <li><a href='overperforming_tracts_total_projections.png'>overperforming tracts from 2020 total land use projections</a></li>
+        <li><a href='underperforming_tracts_comercial_projections.png'>underperforming tracts from 2020 commercial land use projections</a></li>
+        <li><a href='underperforming_tracts_residential_projections.png'>underperforming tracts from 2020 residential land use projections</a></li>
+        <li><a href='underperforming_tracts_industrial_projections.png'>underperforming tracts from 2020 industrial land use projections</a></li>
+        <li><a href='underperforming_tracts_total_projections.png'>underperforming tracts from 2020 total land use projections</a></li>
+      </ul>
+      <h4>historical master street plan maps (7/2026)</h4>
+      <i>mapping historical master street plans for central arkansas to determine difference between planned and constructed roads</i>
+      <ul>
+        <li><a href='https://mapwarper.net/layers/2599'>little rock master street plan 1959</a></li>
+        <li><a href='https://mapwarper.net/maps/109805'>central arkansas master street plan 1959</a></li>
+        <li><a href='https://mapwarper.net/maps/109805'>little rock master street plan 1982</a></li>
+      </ul>
+      <h4>sherwood precinct boundary redrawing exercise (7/2026)</h4>
+      <i>theoretical precinct boundary redrawing for sherwood, arkansas</i>
+      <ul>
+        <li><a href='precinct_map.pdf'>precinct map</a></li>
+      </ul>
+    </details>
+    <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
+    <ul>
+      <li><a href='research paper.pdf'>research paper</a></li>
+      <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
+    </ul>
+    <h3>safeblue - a safety api for chicago (2/2026)</h3>
     <i>an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation</i>
     <ul>
       <li><a href='https://github.com/apizarro18/SafeBlue'>repository</a></li>
     </ul>
-    <h3>custom mouse project (present)</h4>
+    <h3>custom mouse project (present)</h3>
     <i>currently a work in progress, pcb design finished</i>
     <ul>
       <li><a href='https://github.com/paulmurphyy/mouse-project'>repository</a></li>
     </ul>
-    <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h4>
+    <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h3>
     <i>currently deployed on an aws instance that makes the service available to the web.</i>
     <ul>
       <li><a href='https://schedulemyshift.com'>webapp</a></li>
       <li><a href='https://github.com/paulmurphyy/reflex-work-scheduler'>repository</a></li>
-    </ul>
-    <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h4>
-    <ul>
-      <li><a href='research paper.pdf'>research paper</a></li>
-      <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
     </ul>
   </body>
 </html>
