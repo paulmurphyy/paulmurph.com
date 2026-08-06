@@ -11,9 +11,8 @@
         position: fixed;
         inset: -40vh 0;
         z-index: -1;
-        background: url("images/shinkansen.webp") center / cover;
+        background: linear-gradient(rgb(0 0 0 / 0), rgb(0 0 0 / .45)), url("https://travelweekly.com.au/wp-content/uploads/2019/02/iStock-909110518.jpg") center / cover;
         will-change: transform;
-        filter: brightness(90%);
       }
       @supports (animation-timeline: scroll()) {
         #bg { animation: parallax linear both; animation-timeline: scroll(root); }
@@ -40,11 +39,12 @@
       h3 {
         display: inline;
       }
+      details { padding: 10px 10px 0; }
+      .section { padding: 10px 10px; }
       details, .section {
-        background: color-mix(in srgb, var(--background) 72%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+        background: color-mix(in srgb, var(--background) 70%, transparent);
+        /* border: 1px solid color-mix(in srgb, var(--border) 45%, transparent); */
         border-radius: 6px;
-        padding: 10px 10px 0;
         margin: 1em 0;
       }
     </style>
