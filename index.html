@@ -175,6 +175,14 @@
         details > summary { padding: 12px; gap: 10px; }
         #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
       }
+      details { padding: 10px 10px 0; }
+      .section { padding: 10px 10px; }
+      details, .section {
+        background: color-mix(in srgb, var(--background) 70%, transparent);
+        /* border: 1px solid color-mix(in srgb, var(--border) 45%, transparent); */
+        border-radius: 6px;
+        margin: 1em 0;
+      }
     </style>
   </head>
   <body>
@@ -429,4 +437,14 @@
       })();
     </script>
   </body>
+  <script>
+    if (!CSS.supports('animation-timeline: scroll()')) {
+      const bg = document.getElementById('bg'), d = document.documentElement;
+      addEventListener('scroll', () => {
+        const max = d.scrollHeight - innerHeight;
+        const y = max > 0 ? (scrollY / max) * innerHeight * 0.4 : 0;   // 0.4 ↔ 40vh
+        bg.style.transform = `translate3d(0, ${-y}px, 0)`;
+      }, { passive: true });
+    }
+  </script>
 </html>
