@@ -9,6 +9,8 @@
       try {
         document.documentElement.dataset.bg =
           localStorage.getItem('bg-mode') === 'photo' ? 'photo' : 'video';
+        const p = localStorage.getItem('bg-poster');
+        if (p) document.documentElement.style.setProperty('--poster', `url("${p}")`);
       } catch (e) { document.documentElement.dataset.bg = 'video'; }
     </script>
     <style>
@@ -27,13 +29,14 @@
         content: ""; position: absolute; inset: 0;
         background: linear-gradient(rgb(0 0 0 / .65), rgb(0 0 0 / .45));
       }
-      #bg video, #bg img {
+      #bg video, #bg img, #bgposter {
         position: absolute; inset: 0; width: 100%; height: 100%;
         object-fit: cover; display: block;
         scale: 1.06; translate: var(--mx, 0px) var(--my, 0px);
         transition: opacity .45s ease;
       }
       [data-bg="video"] #bgimg, [data-bg="photo"] #bgvid { opacity: 0; }
+      #bgposter { background: var(--poster) center / cover no-repeat; }
       [data-bg="photo"] #bgposter, #bgposter.gone { opacity: 0; }
 
       @supports (animation-timeline: scroll()) {
@@ -179,7 +182,7 @@
       <video id="bgvid" autoplay muted loop playsinline preload="auto">
         <source src="https://media.paulmurph.com/bg2.mp4" type="video/mp4">
       </video>
-      <img id="bgposter" alt="" aria-hidden="true" decoding="async">
+      <div id="bgposter"></div>
       <img id="bgimg" src="https://www.paulmurph.com/images/shinkansen.webp"
            alt="" decoding="async" fetchpriority="low">
     </div>
@@ -331,18 +334,8 @@
           }, { passive: true });
         }
 
-        const L = JSON.parse(ls('probe') || '[]');
-        const mark = (n) => { L.push([n, Math.round(performance.now()), vid.readyState, +vid.currentTime.toFixed(1)]); ls('probe', JSON.stringify(L)); };
-        window.__L = L;
-        ['loadedmetadata','loadeddata','canplay','seeking','seeked','playing','waiting','stalled','error'].forEach(n => vid.addEventListener(n, () => mark(n)));
-        if (vid.requestVideoFrameCallback) vid.requestVideoFrameCallback(() => mark('FIRSTFRAME'));
-
-        const poster = document.getElementById('bgposter'),
-              stored = ls('bg-poster');
-        mark('start stored=' + (stored ? stored.length : 0));
-        if (stored) poster.src = stored;
-        poster.addEventListener('load', () => mark('poster:decoded'));
-        const hide = () => { mark('HIDE'); poster.classList.add('gone'); };
+        const poster = document.getElementById('bgposter');
+        const hide = () => poster.classList.add('gone');
         vid.addEventListener('playing', hide);
         vid.addEventListener('seeked', hide);
 
