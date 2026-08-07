@@ -346,10 +346,10 @@
           if (vid.readyState < 2 || !vid.videoWidth) return;
           try {
             const c = document.createElement('canvas');
-            c.width = 480;
-            c.height = Math.round(480 * vid.videoHeight / vid.videoWidth);
+            c.width = 1280;
+            c.height = Math.round(1280 * vid.videoHeight / vid.videoWidth);
             c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
-            ls('bg-poster', c.toDataURL('image/jpeg', 0.6));
+            ls('bg-poster', c.toDataURL('image/jpeg', 0.8));
           } catch (e) {}
         };
 
