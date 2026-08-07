@@ -77,6 +77,9 @@
         overflow: hidden; border-radius: 6px;
         background: color-mix(in srgb, var(--background) 70%, transparent);
       }
+      /* beat water.css's details[open] padding and summary margin */
+      details[open] { padding: 0; }
+      details[open] > summary { margin: 0; }
       details::before {
         content: ""; position: absolute; inset: 0; z-index: -2;
         background: color-mix(in srgb, var(--background) 35%, transparent);
@@ -99,6 +102,7 @@
         background: color-mix(in srgb, var(--text-muted) 70%, transparent);
       }
       .rail.dragging { cursor: grabbing; scroll-snap-type: none; }
+      .rail.momentum { scroll-snap-type: none; }
       .rail > .section {
         flex: 0 0 90%; min-width: 0; margin: 0; scroll-snap-align: start;
         background: color-mix(in srgb, var(--background) 42%, transparent);
@@ -385,9 +389,26 @@
 
         document.querySelectorAll('.rail').forEach((rail) => {
           let x = 0, left = 0, moved = 0, down = false;
+          let vx = 0, lastX = 0, lastT = 0, raf = 0;
+
+          const stop = () => {
+            if (raf) cancelAnimationFrame(raf);
+            raf = 0; vx = 0;
+            rail.classList.remove('momentum');
+          };
+
+          const step = () => {
+            vx *= 0.95;
+            if (Math.abs(vx) < 0.5) { stop(); return; }
+            rail.scrollLeft += vx;
+            raf = requestAnimationFrame(step);
+          };
+
           rail.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'mouse' || e.button) return;
+            stop();
             down = true; moved = 0; x = e.clientX; left = rail.scrollLeft;
+            lastX = e.clientX; lastT = performance.now();
             rail.classList.add('dragging');
             rail.setPointerCapture(e.pointerId);
             e.preventDefault();
@@ -397,15 +418,24 @@
             const d = e.clientX - x;
             moved = Math.max(moved, Math.abs(d));
             rail.scrollLeft = left - d;
+            const now = performance.now(), dt = now - lastT;
+            if (dt > 0) vx = -(e.clientX - lastX) / dt * 16.67; // scroll px per 60fps frame
+            lastX = e.clientX; lastT = now;
           });
           const end = (e) => {
             if (!down) return;
             down = false;
             rail.classList.remove('dragging');
             if (rail.hasPointerCapture(e.pointerId)) rail.releasePointerCapture(e.pointerId);
+            if (Math.abs(vx) > 1.5) {
+              if (Math.abs(vx) > 40) vx = Math.sign(vx) * 40; // clamp fling speed
+              rail.classList.add('momentum');
+              raf = requestAnimationFrame(step);
+            }
           };
           rail.addEventListener('pointerup', end);
           rail.addEventListener('pointercancel', end);
+          rail.addEventListener('wheel', stop, { passive: true });
           rail.addEventListener('click', (e) => {
             if (moved > 5) { e.preventDefault(); e.stopPropagation(); }
           }, true);
