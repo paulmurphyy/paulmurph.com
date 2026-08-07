@@ -1,101 +1,439 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <title>paulmurph.com</title>
+    <script>
+      try {
+        document.documentElement.dataset.bg =
+          localStorage.getItem('bg-mode') === 'photo' ? 'photo' : 'video';
+      } catch (e) { document.documentElement.dataset.bg = 'video'; }
+    </script>
     <style>
-      ul {
-        list-style-type: none;
-        padding-left: 20px;
+      body {
+        background: transparent;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        cursor: default;
+        overflow-x: hidden;
       }
-      ul li::before {
-        content: "-";
-        margin-right: 5px;
+
+      #bg { position: fixed; inset: -40vh 0; z-index: -3; overflow: hidden; background: #111; }
+      #bg::after {
+        content: ""; position: absolute; inset: 0;
+        background: linear-gradient(rgb(0 0 0 / .65), rgb(0 0 0 / .45));
       }
-      summary {
-        width: 100%;
+      #bg video, #bg img {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        object-fit: cover; display: block;
+        scale: 1.06; translate: var(--mx, 0px) var(--my, 0px);
+        transition: opacity .45s ease;
       }
-      summary:hover, summary:focus {
-        text-decoration: none;
+      [data-bg="video"] #bgimg, [data-bg="photo"] #bgvid { opacity: 0; }
+      [data-bg="photo"] #bgposter, #bgposter.gone { opacity: 0; }
+
+      @supports (animation-timeline: scroll()) {
+        #bg { animation: parallax linear both; animation-timeline: scroll(root); }
       }
-      summary h3 {
-        display: inline;
+      @keyframes parallax { to { translate: 0 -40vh; } }
+      @media (prefers-reduced-motion: reduce) {
+        #bg { animation: none; }
+        #bg video { display: none; }
+        #bg img { scale: 1; translate: none; }
+      }
+
+      ul { list-style-type: none; padding-left: 20px; }
+      ul li::before { content: "-"; margin-right: 5px; }
+      i { display: block; }
+      h3 { display: inline; }
+      hr { margin: 8px 0 16px; }
+
+      .section {
+        position: relative; box-sizing: border-box;
+        padding: 10px; margin: 1em 0; border-radius: 6px;
+        background: color-mix(in srgb, var(--background) 62%, transparent);
+        transition: background-color .25s ease;
+      }
+      .section:hover { background: color-mix(in srgb, var(--background) 78%, transparent); }
+
+      .section::before, details > summary::before {
+        content: ""; position: absolute; inset: 0; z-index: -1;
+        border-radius: inherit; opacity: 0;
+        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        transition: opacity .25s ease;
+      }
+      .section:hover::before, details > summary:hover::before,
+      details[open] > summary::before { opacity: 1; }
+
+      details {
+        position: relative; display: block; margin: 1em 0; padding: 0;
+        overflow: hidden; border-radius: 8px; background: none;
+      }
+      details[open] { padding: 0; }
+      details::before {
+        content: ""; position: absolute; inset: 0; z-index: -2;
+        background: color-mix(in srgb, var(--background) 35%, transparent);
+      }
+
+      .rail {
+        display: flex; align-items: stretch; gap: 12px; padding: 12px;
+        overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity; scroll-padding-left: 12px;
+        -webkit-overflow-scrolling: touch; cursor: grab;
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--text-muted) 40%, transparent) transparent;
+      }
+      .rail::-webkit-scrollbar { height: 8px; }
+      .rail::-webkit-scrollbar-track { background: transparent; }
+      .rail::-webkit-scrollbar-thumb {
+        border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 40%, transparent);
+      }
+      .rail::-webkit-scrollbar-thumb:hover {
+        background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+      }
+      .rail.dragging { cursor: grabbing; scroll-snap-type: none; }
+      .rail > .section {
+        flex: 0 0 90%; min-width: 0; margin: 0; scroll-snap-align: start;
+        background: color-mix(in srgb, var(--background) 42%, transparent);
+      }
+      .rail > .section:hover { background: color-mix(in srgb, var(--background) 66%, transparent); }
+
+      details > summary {
+        position: relative; display: flex; align-items: center; gap: 14px;
+        list-style: none; margin: 0; padding: 10px; cursor: pointer;
+        background: color-mix(in srgb, var(--background) 57%, transparent);
+        transition: background-color .25s ease;
+      }
+      details[open] > summary { margin: 0; }
+      details > summary:hover, details[open] > summary {
+        background: color-mix(in srgb, var(--background) 72%, transparent);
+      }
+      summary:hover, summary:focus { text-decoration: none; }
+      details > summary h3 { margin: 0; }
+      details > summary::-webkit-details-marker { display: none; }
+
+      details > summary::after {
+        content: ""; flex: none; margin-left: auto; width: 8px; height: 8px;
+        border-right: 1.5px solid var(--text-muted);
+        border-bottom: 1.5px solid var(--text-muted);
+        border-radius: 0 0 1.5px 0;
+        transform: translate(0, -35%) rotate(45deg);
+        transition: transform .25s ease, border-color .25s ease;
+      }
+      details[open] > summary::after { transform: translate(0, 35%) rotate(225deg); }
+      details > summary:hover::after { border-color: var(--text-bright); }
+
+      #bgtoggle {
+        position: fixed; top: 14px; right: 14px; z-index: 5;
+        width: 34px; height: 34px; display: grid; place-items: center;
+        padding: 0; border: none; border-radius: 8px; cursor: pointer;
+        color: var(--text-muted);
+        background: color-mix(in srgb, var(--background) 62%, transparent);
+        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        transition: background-color .25s ease, color .25s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #bgtoggle:hover {
+        background: color-mix(in srgb, var(--background) 82%, transparent);
+        color: var(--text-bright);
+      }
+      #bgtoggle:active { transform: none; }
+      #bgtoggle:focus { box-shadow: none; }
+      #bgtoggle:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+      #bgtoggle svg {
+        width: 17px; height: 17px; display: block; fill: none;
+        stroke: currentColor; stroke-width: 1.7;
+        stroke-linecap: round; stroke-linejoin: round;
+      }
+      [data-bg="video"] #bgtoggle .i-video,
+      [data-bg="photo"] #bgtoggle .i-photo { display: none; }
+
+      .credits {
+        margin: 2em 0 1.5em; font-size: .8rem; line-height: 1.75; color: var(--text-muted);
+      }
+      .credits p { margin: 0; }
+      .credits a { color: var(--text-muted); text-underline-offset: 2px; }
+      .credits a:hover { color: var(--text-bright); }
+
+      @media (max-width: 640px) {
+        body { margin: 12px auto; padding: 0 12px; }
+        h1 { font-size: 1.6rem; margin: 0 46px .3em 0; }
+        h2 { font-size: 1.05rem; }
+        h3 { font-size: .98rem; }
+        i { font-size: .92rem; }
+        ul { padding-left: 10px; }
+        li { margin: .35em 0; }
+        .section { padding: 12px; }
+        .rail { gap: 10px; padding: 10px; scroll-padding-left: 10px; }
+        details > summary { padding: 12px; gap: 10px; }
+        #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
       }
     </style>
   </head>
   <body>
-    <div id='navbar'></div>
+    <div id="bg">
+      <video id="bgvid" autoplay muted loop playsinline preload="auto">
+        <source src="https://media.paulmurph.com/bg2.mp4" type="video/mp4">
+      </video>
+      <img id="bgposter" alt="" aria-hidden="true" decoding="async">
+      <img id="bgimg" src="https://www.paulmurph.com/images/shinkansen.webp"
+           alt="" decoding="async" fetchpriority="low">
+    </div>
+    <button id="bgtoggle" type="button" aria-label="show the background photo">
+      <svg class="i-photo" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+        <circle cx="8.5" cy="9.5" r="1.6"/>
+        <path d="M20.5 15.5 16 11 5.5 20"/>
+      </svg>
+      <svg class="i-video" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2.5"/>
+        <path d="M10.2 9.4 15 12l-4.8 2.6z" fill="currentColor"/>
+      </svg>
+    </button>
+
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
+
     <details>
       <summary><h3>regional planning internship at metroplan in little rock (7/2026 - 8/2026)</h3></summary>
-      <h4>transit oriented development (TOD) and infill development readiness study for little rock and north little rock (8/2026)</h4>
-      <i>unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool</i>
-      <ul>
-        <li><a href='tod_infill_report.pdf'>report</a></li>
-        <li><a href='final_score.png'>final result heatmap</a></li>
-        <li><a href='brt_routes_high_potential_areas.png'>example implementation - proposed BRT routes and high potential TOD areas</a></li>
-        <li><a href='brt_routes_jobs.png'>example implementation - BRT routes jobs per mile</a></li>
-        <li><a href='brt_routes_pop.png'>example implementation - BRT routes population per mile</a></li>
-        <li><a href='redevelopment_potential_map.png'>example factor in final result - redevelopment potential</a></li>
-        <li><a href='weighted_tod_score.png'>TOD result heatmap</a></li>
-      </ul>
-      <h4>unofficial central arkansas 2055 population estimates from households projection model (8/2026)</h4>
-      <i>built a households projection model at the parcel level with ai and used the projections to generate unofficial central arkansas population estimates for 2055</i>
-      <ul>
-        <li><a href='https://github.com/paulmurphyy/ar_county_projections'>repository</a></li>
-        <li><a href='population_estimates_central_arkansas.xlsx'>population esimates spreadsheet</a></li>
-      </ul>
-      <h4>using optical character recognition (OCR) and large language models (LLMs) to locally extract fields from scanned documents (7/2026)</h4>
-      <i>created a python pipeline that uses paddleocr and ollama to locally extract and turn fields from a scanned document into json or other formats</i>
-      <ul>
-        <li><a href='https://github.com/paulmurphyy/document-parser'>repository</a></li>
-      </ul>
-      <h4>pulaski county land use projections vs actual census data (7/2026)</h4>
-      <i>mapping pulaski county projected land uses (2020) extracted from 1970 census tables vs actual land uses from 2023</i>
-      <ul>
-        <li><a href='overperforming_tracts_comercial_projections.png'>overperforming tracts from 2020 commercial land use projections</a></li>
-        <li><a href='overperforming_tracts_residential_projections.png'>overperforming tracts from 2020 residential land use projections</a></li>
-        <li><a href='overperforming_tracts_industrial_projections.png'>overperforming tracts from 2020 industrial land use projections</a></li>
-        <li><a href='overperforming_tracts_total_projections.png'>overperforming tracts from 2020 total land use projections</a></li>
-        <li><a href='underperforming_tracts_comercial_projections.png'>underperforming tracts from 2020 commercial land use projections</a></li>
-        <li><a href='underperforming_tracts_residential_projections.png'>underperforming tracts from 2020 residential land use projections</a></li>
-        <li><a href='underperforming_tracts_industrial_projections.png'>underperforming tracts from 2020 industrial land use projections</a></li>
-        <li><a href='underperforming_tracts_total_projections.png'>underperforming tracts from 2020 total land use projections</a></li>
-      </ul>
-      <h4>historical master street plan maps (7/2026)</h4>
-      <i>mapping historical master street plans for central arkansas to determine difference between planned and constructed roads</i>
-      <ul>
-        <li><a href='https://mapwarper.net/layers/2599'>little rock master street plan 1959</a></li>
-        <li><a href='https://mapwarper.net/maps/109805'>central arkansas master street plan 1959</a></li>
-        <li><a href='https://mapwarper.net/maps/109805'>little rock master street plan 1982</a></li>
-      </ul>
-      <h4>sherwood precinct boundary redrawing exercise (7/2026)</h4>
-      <i>theoretical precinct boundary redrawing for sherwood, arkansas</i>
-      <ul>
-        <li><a href='precinct_map.pdf'>precinct map</a></li>
-      </ul>
+      <div class="rail">
+        <div class="section">
+          <h3>transit oriented development (TOD) and infill development readiness study for little rock and north little rock (8/2026)</h3>
+          <i>unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool.</i>
+          <hr>
+          <ul>
+            <li><a href='tod_infill_report.pdf'>report</a></li>
+            <li><a href='final_score.png'>final result heatmap</a></li>
+            <li><a href='brt_routes_high_potential_areas.png'>example implementation - proposed BRT routes and high potential TOD areas.</a></li>
+            <li><a href='brt_routes_jobs.png'>example implementation - BRT routes jobs per mile</a></li>
+            <li><a href='brt_routes_pop.png'>example implementation - BRT routes population per mile</a></li>
+            <li><a href='redevelopment_potential_map.png'>example factor in final result - redevelopment potential</a></li>
+            <li><a href='weighted_tod_score.png'>TOD result heatmap</a></li>
+          </ul>
+        </div>
+        <div class="section">
+          <h3>unofficial central arkansas 2055 population estimates from households projection model (8/2026)</h3>
+          <i>built a households projection model at the parcel level with ai and used the projections to generate unofficial central arkansas population estimates for 2055.</i>
+          <hr>
+          <ul>
+            <li><a href='https://github.com/paulmurphyy/ar_county_projections'>repository</a></li>
+            <li><a href='population_estimates_2055_central_arkansas.xlsx'>population esimates spreadsheet</a></li>
+          </ul>
+        </div>
+        <div class="section">
+          <h3>using optical character recognition (OCR) and large language models (LLMs) to locally extract fields from scanned documents (7/2026)</h3>
+          <i>created a python pipeline that uses paddleocr and ollama to locally extract and turn fields from a scanned document into json or other formats.</i>
+          <hr>
+          <ul>
+            <li><a href='https://github.com/paulmurphyy/document-parser'>repository</a></li>
+          </ul>
+        </div>
+        <div class="section">
+          <h3>pulaski county land use projections vs actual census data (7/2026)</h3>
+          <i>mapping pulaski county projected land uses (2020) extracted from 1970 census tables vs actual land uses from 2023.</i>
+          <hr>
+          <ul>
+            <li><a href='overperforming_tracts_comercial_projections.png'>overperforming tracts from 2020 commercial land use projections</a></li>
+            <li><a href='overperforming_tracts_residential_projections.png'>overperforming tracts from 2020 residential land use projections</a></li>
+            <li><a href='overperforming_tracts_industrial_projections.png'>overperforming tracts from 2020 industrial land use projections</a></li>
+            <li><a href='overperforming_tracts_total_projections.png'>overperforming tracts from 2020 total land use projections</a></li>
+            <li><a href='underperforming_tracts_commercial_projections.png'>underperforming tracts from 2020 commercial land use projections</a></li>
+            <li><a href='underperforming_tracts_residential_projections.png'>underperforming tracts from 2020 residential land use projections</a></li>
+            <li><a href='underperforming_tracts_industrial_projections.png'>underperforming tracts from 2020 industrial land use projections</a></li>
+            <li><a href='underperforming_tracts_total_projections.png'>underperforming tracts from 2020 total land use projections</a></li>
+          </ul>
+        </div>
+        <div class="section">
+          <h3>historical master street plan maps (7/2026)</h3>
+          <i>mapping historical master street plans for central arkansas to determine difference between planned and constructed roads.</i>
+          <hr>
+          <ul>
+            <li><a href='https://mapwarper.net/layers/2599'>little rock master street plan 1959</a></li>
+            <li><a href='https://mapwarper.net/maps/109805'>central arkansas master street plan 1959</a></li>
+            <li><a href='https://mapwarper.net/layers/2596'>little rock master street plan 1982</a></li>
+          </ul>
+        </div>
+        <div class="section">
+          <h3>sherwood precinct boundary redrawing exercise (7/2026)</h3>
+          <i>theoretical precinct boundary redrawing for sherwood, arkansas.</i>
+          <hr>
+          <ul>
+            <li><a href='precinct_map.pdf'>precinct map</a></li>
+          </ul>
+        </div>
+      </div>
     </details>
-    <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
-    <ul>
-      <li><a href='research paper.pdf'>research paper</a></li>
-      <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
-    </ul>
-    <h3>safeblue - a safety api for chicago (2/2026)</h3>
-    <i>an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation</i>
-    <ul>
-      <li><a href='https://github.com/apizarro18/SafeBlue'>repository</a></li>
-    </ul>
-    <h3>custom mouse project (present)</h3>
-    <i>currently a work in progress, pcb design finished</i>
-    <ul>
-      <li><a href='https://github.com/paulmurphyy/mouse-project'>repository</a></li>
-    </ul>
-    <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h3>
-    <i>currently deployed on an aws instance that makes the service available to the web.</i>
-    <ul>
-      <li><a href='https://schedulemyshift.com'>webapp</a></li>
-      <li><a href='https://github.com/paulmurphyy/reflex-work-scheduler'>repository</a></li>
-    </ul>
+
+    <div class="section">
+      <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
+      <i>a research project for a theoretical heavy rail transportation solution in pulaski county, ar.</i>
+      <hr>
+      <ul>
+        <li><a href='research paper.pdf'>research paper</a></li>
+        <li><a href='https://github.com/paulmurphyy/metro-project/tree/selection'>repository</a></li>
+      </ul>
+    </div>
+    <div class="section">
+      <h3>safeblue - a safety api for chicago (2/2026)</h3>
+      <i>an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation.</i>
+      <hr>
+      <ul>
+        <li><a href='https://github.com/apizarro18/SafeBlue'>repository</a></li>
+      </ul>
+    </div>
+    <div class="section">
+      <h3>custom mouse project (present)</h3>
+      <i>currently a work in progress, pcb design finished.</i>
+      <hr>
+      <ul>
+        <li><a href='https://github.com/paulmurphyy/mouse-project'>repository</a></li>
+      </ul>
+    </div>
+    <div class="section">
+      <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h3>
+      <i>previously deployed on an aws instance that makes the service available to the web.</i>
+      <hr>
+      <ul>
+        <li><a href='https://schedulemyshift.com'>webapp</a></li>
+        <li><a href='https://github.com/paulmurphyy/reflex-work-scheduler'>repository</a></li>
+      </ul>
+    </div>
+
+    <footer class="credits">
+      <p>background video by <a href="https://www.youtube.com/@%E9%90%98%E5%BB%BA%E5%9D%AA" rel="noopener">鐘建坪</a>
+        — <a href="https://www.youtube.com/watch?v=W4bDKChzOmY" rel="noopener">front seat view on the yurikamome line</a>,
+        filmed between shimbashi and toyosu in tokyo, japan.</p>
+      <p>background photo taken in shizuoka, japan — an n700 shinkansen passing mt. fuji
+        and the shibazakura in bloom, may 2017.</p>
+    </footer>
+
+    <script>
+      (() => {
+        const root = document.documentElement,
+              vid  = document.getElementById('bgvid'),
+              img  = document.getElementById('bgimg'),
+              btn  = document.getElementById('bgtoggle'),
+              ls   = (k, v) => {
+                try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); }
+                catch (e) {}
+              };
+
+        if (!CSS.supports('animation-timeline: scroll()')) {
+          const bg = document.getElementById('bg');
+          addEventListener('scroll', () => {
+            const max = root.scrollHeight - innerHeight;
+            const y = (max > 0 ? scrollY / max : 0) * innerHeight * 0.4;
+            bg.style.transform = `translate3d(0, ${-y}px, 0)`;
+          }, { passive: true });
+        }
+
+        const L = JSON.parse(ls('probe') || '[]');
+        const mark = (n) => { L.push([n, Math.round(performance.now()), vid.readyState, +vid.currentTime.toFixed(1)]); ls('probe', JSON.stringify(L)); };
+        window.__L = L;
+        ['loadedmetadata','loadeddata','canplay','seeking','seeked','playing','waiting','stalled','error'].forEach(n => vid.addEventListener(n, () => mark(n)));
+        if (vid.requestVideoFrameCallback) vid.requestVideoFrameCallback(() => mark('FIRSTFRAME'));
+
+        const poster = document.getElementById('bgposter'),
+              stored = ls('bg-poster');
+        mark('start stored=' + (stored ? stored.length : 0));
+        if (stored) poster.src = stored;
+        poster.addEventListener('load', () => mark('poster:decoded'));
+        const hide = () => { mark('HIDE'); poster.classList.add('gone'); };
+        vid.addEventListener('playing', hide);
+        vid.addEventListener('seeked', hide);
+
+        const snap = () => {
+          if (vid.readyState < 2 || !vid.videoWidth) return;
+          try {
+            const c = document.createElement('canvas');
+            c.width = 480;
+            c.height = Math.round(480 * vid.videoHeight / vid.videoWidth);
+            c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
+            ls('bg-poster', c.toDataURL('image/jpeg', 0.6));
+          } catch (e) {}
+        };
+
+        const saveTime = () => { if (vid.duration) ls('bg-time', vid.currentTime); };
+        let last = 0;
+        vid.addEventListener('loadedmetadata', () => {
+          const t = parseFloat(ls('bg-time'));
+          if (t > 0 && t < vid.duration - 0.25) vid.currentTime = t;
+        });
+        vid.addEventListener('timeupdate', () => {
+          if (Date.now() - last > 1000) { last = Date.now(); saveTime(); }
+        });
+        const store = () => { saveTime(); snap(); };
+        addEventListener('pagehide', store);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) store(); });
+
+        const ready = () => img.decode().then(() => img.naturalWidth > 0, () => false);
+        addEventListener('load', () => setTimeout(ready, 1200));
+        btn.addEventListener('pointerenter', ready);
+        btn.addEventListener('focus', ready);
+
+        const apply = (mode) => {
+          root.dataset.bg = mode;
+          ls('bg-mode', mode);
+          if (mode === 'photo') { store(); vid.pause(); } else vid.play().catch(() => {});
+          btn.setAttribute('aria-label', `show the background ${mode === 'photo' ? 'video' : 'photo'}`);
+        };
+        const setMode = (mode) => mode === 'photo'
+          ? ready().then((ok) => apply(ok ? 'photo' : 'video'))
+          : apply('video');
+
+        setMode(root.dataset.bg);
+        btn.addEventListener('click', () => setMode(root.dataset.bg === 'photo' ? 'video' : 'photo'));
+
+        document.querySelectorAll('.rail').forEach((rail) => {
+          let x = 0, left = 0, moved = 0, down = false;
+          rail.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'mouse' || e.button) return;
+            down = true; moved = 0; x = e.clientX; left = rail.scrollLeft;
+            rail.classList.add('dragging');
+            rail.setPointerCapture(e.pointerId);
+            e.preventDefault();
+          });
+          rail.addEventListener('pointermove', (e) => {
+            if (!down) return;
+            const d = e.clientX - x;
+            moved = Math.max(moved, Math.abs(d));
+            rail.scrollLeft = left - d;
+          });
+          const end = (e) => {
+            if (!down) return;
+            down = false;
+            rail.classList.remove('dragging');
+            if (rail.hasPointerCapture(e.pointerId)) rail.releasePointerCapture(e.pointerId);
+          };
+          rail.addEventListener('pointerup', end);
+          rail.addEventListener('pointercancel', end);
+          rail.addEventListener('click', (e) => {
+            if (moved > 5) { e.preventDefault(); e.stopPropagation(); }
+          }, true);
+        });
+
+        if (matchMedia('(pointer: fine)').matches &&
+            !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const MAX = 14;
+          let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+          const step = () => {
+            cx += (tx - cx) * 0.08;
+            cy += (ty - cy) * 0.08;
+            root.style.setProperty('--mx', cx.toFixed(2) + 'px');
+            root.style.setProperty('--my', cy.toFixed(2) + 'px');
+            raf = Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1 ? requestAnimationFrame(step) : 0;
+          };
+          addEventListener('pointermove', (e) => {
+            tx = (0.5 - e.clientX / innerWidth)  * 2 * MAX;
+            ty = (0.5 - e.clientY / innerHeight) * 2 * MAX;
+            if (!raf) raf = requestAnimationFrame(step);
+          }, { passive: true });
+        }
+      })();
+    </script>
   </body>
 </html>
