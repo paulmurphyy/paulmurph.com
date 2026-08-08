@@ -18,6 +18,14 @@
       } catch (e) { document.documentElement.dataset.bg = 'video'; }
     </script>
     <style>
+      :root {
+        --panel: color-mix(in srgb, var(--background) 70%, transparent);
+        --chrome: color-mix(in srgb, var(--background) 62%, transparent);
+        --rail-thumb: color-mix(in srgb, var(--text-muted) 40%, transparent);
+        --blur: blur(8px);
+        --parallax: -40vh;  /* background travel — the JS fallback mirrors this */
+      }
+
       body {
         background: transparent;
         -webkit-user-select: none;
@@ -28,7 +36,7 @@
         overflow-x: hidden;
       }
 
-      #bg { position: fixed; inset: -40vh 0; z-index: -3; overflow: hidden; background: #111; }
+      #bg { position: fixed; inset: var(--parallax) 0; z-index: -3; overflow: hidden; background: #111; }
       #bg::after {
         content: ""; position: absolute; inset: 0;
         background: linear-gradient(rgb(0 0 0 / .65), rgb(0 0 0 / .45));
@@ -46,23 +54,20 @@
       @supports (animation-timeline: scroll()) {
         #bg { animation: parallax linear both; animation-timeline: scroll(root); }
       }
-      @keyframes parallax { to { translate: 0 -40vh; } }
-      @media (prefers-reduced-motion: reduce) {
-        #bg { animation: none; }
-        #bg video { display: none; }
-        #bg img { scale: 1; translate: none; }
-      }
+      @keyframes parallax { to { translate: 0 var(--parallax); } }
 
       ul { list-style-type: none; padding-left: 20px; }
       ul li::before { content: "-"; margin-right: 5px; }
-      i { display: block; }
       h3 { display: inline; }
       hr { margin: 8px 0 16px; }
+
+      /* the one-line blurb under each project heading */
+      .desc { display: block; }
 
       .section {
         position: relative; box-sizing: border-box;
         padding: 10px; margin: 1em 0; border-radius: 6px;
-        background: color-mix(in srgb, var(--background) 70%, transparent);
+        background: var(--panel);
         transition: background-color .25s ease;
       }
       .section:hover { background: color-mix(in srgb, var(--background) 78%, transparent); }
@@ -70,22 +75,21 @@
       .section::before, details > summary::before {
         content: ""; position: absolute; inset: 0; z-index: -1;
         border-radius: inherit; opacity: 0;
-        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
         transition: opacity .25s ease;
       }
       .section:hover::before, details > summary:hover::before,
       details[open] > summary::before { opacity: 1; }
-      .credits i { display: inline; }
+
       details {
         position: relative; display: block; margin: 1em 0; padding: 0;
         overflow: hidden; border-radius: 6px;
-        background: color-mix(in srgb, var(--background) 70%, transparent);
+        background: var(--panel);
       }
-      /* closed: summary is the only visible layer — no stacked backgrounds */
+      /* closed: drop the details' own tint so it doesn't stack on the summary's.
+         the ::before wash below still applies in both states. */
       details:not([open]) { background: transparent; }
-      details:not([open]) > summary {
-        background: color-mix(in srgb, var(--background) 70%, transparent);
-      }
+      details:not([open]) > summary { background: var(--panel); }
       /* beat water.css's details[open] padding and summary margin */
       details[open] { padding: 0; }
       details[open] > summary { margin: 0; }
@@ -100,13 +104,11 @@
         scroll-snap-type: x proximity; scroll-padding-left: 12px;
         -webkit-overflow-scrolling: touch; cursor: grab;
         scrollbar-width: thin;
-        scrollbar-color: color-mix(in srgb, var(--text-muted) 40%, transparent) transparent;
+        scrollbar-color: var(--rail-thumb) transparent;
       }
       .rail::-webkit-scrollbar { height: 8px; }
       .rail::-webkit-scrollbar-track { background: transparent; }
-      .rail::-webkit-scrollbar-thumb {
-        border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 40%, transparent);
-      }
+      .rail::-webkit-scrollbar-thumb { border-radius: 4px; background: var(--rail-thumb); }
       .rail::-webkit-scrollbar-thumb:hover {
         background: color-mix(in srgb, var(--text-muted) 70%, transparent);
       }
@@ -147,8 +149,8 @@
         width: 34px; height: 34px; display: grid; place-items: center;
         padding: 0; border: none; border-radius: 8px; cursor: pointer;
         color: var(--text-muted);
-        background: color-mix(in srgb, var(--background) 62%, transparent);
-        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        background: var(--chrome);
+        -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
         transition: background-color .25s ease, color .25s ease;
         -webkit-tap-highlight-color: transparent;
       }
@@ -167,9 +169,39 @@
       }
       [data-bg="video"] #bgtoggle .i-video,
       [data-bg="photo"] #bgtoggle .i-photo { display: none; }
-      #musictoggle .i-note { display: none; }
+      #musictoggle:not(.playing) .i-note,
       #musictoggle.playing .i-muted { display: none; }
-      #musictoggle.playing .i-note { display: block; }
+
+      #musicask {
+        position: fixed; right: 14px; bottom: 14px; z-index: 6;
+        box-sizing: border-box;
+        max-width: min(19rem, calc(100vw - 28px));
+        padding: 12px 14px; border-radius: 8px;
+        color: var(--text-muted);
+        background: var(--chrome);
+        -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+        font-size: .88rem; line-height: 1.6;
+        opacity: 0; transform: translateY(10px);
+        transition: opacity .4s ease, transform .4s ease;
+      }
+      #musicask[data-shown] { opacity: 1; transform: none; }
+      #musicask[hidden] { display: none; }
+      #musicask p { margin: 0; }
+      #musicask .row { display: flex; gap: 8px; margin-top: 12px; }
+      #musicask button {
+        font: inherit; font-size: .85rem; margin: 0; padding: 5px 12px;
+        border-radius: 6px; cursor: pointer;
+        color: var(--text-muted); background: transparent;
+        border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+        transition: color .25s ease, border-color .25s ease, background-color .25s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #musicask button:hover {
+        color: var(--text-bright); border-color: var(--text-bright);
+        background: color-mix(in srgb, var(--background) 45%, transparent);
+      }
+      #musicask button:focus { box-shadow: none; }
+      #musicask button:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
 
       .credits {
         margin: 2em 0 1.5em; font-size: .8rem; line-height: 1.75; color: var(--text-muted);
@@ -178,12 +210,19 @@
       .credits a { color: var(--text-muted); text-underline-offset: 2px; }
       .credits a:hover { color: var(--text-bright); }
 
+      /* overrides last: these tie with the base rules on specificity and win on source order */
+      @media (prefers-reduced-motion: reduce) {
+        #bg { animation: none; }
+        #bg video { display: none; }
+        #bg img { scale: 1; translate: none; }
+        #musicask { transition: none; }
+      }
       @media (max-width: 640px) {
         body { margin: 12px auto; padding: 0 12px; }
         h1 { font-size: 1.6rem; margin: 0 46px .3em 0; }
         h2 { font-size: 1.05rem; }
         h3 { font-size: .98rem; }
-        i { font-size: .92rem; }
+        .desc { font-size: .92rem; }
         ul { padding-left: 10px; }
         li { margin: .35em 0; }
         .section { padding: 12px; }
@@ -191,45 +230,8 @@
         details > summary { padding: 12px; gap: 10px; }
         #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
         #musictoggle { top: 52px; right: 10px; width: 38px; height: 38px; }
+        #musicask { right: 10px; bottom: 10px; }
       }
-      #musicask {
-  position: fixed; right: 14px; bottom: 14px; z-index: 6;
-  box-sizing: border-box;
-  max-width: min(19rem, calc(100vw - 28px));
-  padding: 12px 14px; border-radius: 8px;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--background) 62%, transparent);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  font-size: .88rem; line-height: 1.6;
-  opacity: 0; transform: translateY(10px);
-  transition: opacity .4s ease, transform .4s ease;
-}
-#musicask[data-shown] { opacity: 1; transform: none; }
-#musicask[hidden] { display: none; }
-#musicask p { margin: 0; }
-#musicask .track { margin-top: 2px; font-size: .8rem; opacity: .72; }
-#musicask .row { display: flex; gap: 8px; margin-top: 12px; }
-
-#musicask button {
-  font: inherit; font-size: .85rem; margin: 0; padding: 5px 12px;
-  border-radius: 6px; cursor: pointer;
-  color: var(--text-muted); background: transparent;
-  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
-  transition: color .25s ease, border-color .25s ease, background-color .25s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-#musicask button:hover {
-  color: var(--text-bright); border-color: var(--text-bright);
-  background: color-mix(in srgb, var(--background) 45%, transparent);
-}
-#musicask button:focus { box-shadow: none; }
-#musicask button:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
-
-@media (prefers-reduced-motion: reduce) {
-  #musicask { transition: none; }
-}
-/* mobile placement — must come after the base #musicask rules or it's overridden */
-@media (max-width: 640px) { #musicask { right: 10px; bottom: 10px; } }
     </style>
   </head>
   <body>
@@ -267,12 +269,12 @@
 
     <audio id="bgmusic" src="driving-my-love.mp3" loop preload="auto"></audio>
     <div id="musicask" role="dialog" aria-labelledby="musicasktext" hidden>
-  <p id="musicasktext">play background music?</p>
-  <div class="row">
-    <button id="musicyes" type="button">play</button>
-    <button id="musicno" type="button">no thanks</button>
-  </div>
-</div>
+      <p id="musicasktext">play background music?</p>
+      <div class="row">
+        <button id="musicyes" type="button">play</button>
+        <button id="musicno" type="button">no thanks</button>
+      </div>
+    </div>
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
 
@@ -281,7 +283,7 @@
       <div class="rail">
         <div class="section">
           <h3>transit oriented development (TOD) and infill development readiness study for little rock and north little rock (8/2026)</h3>
-          <i>unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool.</i>
+          <i class="desc">unoffical and based on the TOD tool prepared for FDOT, highlights areas the most ready for infill development in lr and nlr. theoretical bus rapid transit (BRT) routes were also drawn to give an example implementation of the tool.</i>
           <hr>
           <ul>
             <li><a href='tod_infill_report.pdf'>report</a></li>
@@ -295,7 +297,7 @@
         </div>
         <div class="section">
           <h3>unofficial central arkansas 2055 population estimates from households projection model (8/2026)</h3>
-          <i>built a households projection model at the parcel level with ai and used the projections to generate unofficial central arkansas population estimates for 2055.</i>
+          <i class="desc">built a households projection model at the parcel level with ai and used the projections to generate unofficial central arkansas population estimates for 2055.</i>
           <hr>
           <ul>
             <li><a href='https://github.com/paulmurphyy/ar_county_projections'>repository</a></li>
@@ -304,7 +306,7 @@
         </div>
         <div class="section">
           <h3>using optical character recognition (OCR) and large language models (LLMs) to locally extract fields from scanned documents (7/2026)</h3>
-          <i>created a python pipeline that uses paddleocr and ollama to locally extract and turn fields from a scanned document into json or other formats.</i>
+          <i class="desc">created a python pipeline that uses paddleocr and ollama to locally extract and turn fields from a scanned document into json or other formats.</i>
           <hr>
           <ul>
             <li><a href='https://github.com/paulmurphyy/document-parser'>repository</a></li>
@@ -312,7 +314,7 @@
         </div>
         <div class="section">
           <h3>pulaski county land use projections vs actual census data (7/2026)</h3>
-          <i>mapping pulaski county projected land uses (2020) extracted from 1970 census tables vs actual land uses from 2023.</i>
+          <i class="desc">mapping pulaski county projected land uses (2020) extracted from 1970 census tables vs actual land uses from 2023.</i>
           <hr>
           <ul>
             <li><a href='overperforming_tracts_comercial_projections.png'>overperforming tracts from 2020 commercial land use projections</a></li>
@@ -327,7 +329,7 @@
         </div>
         <div class="section">
           <h3>historical master street plan maps (7/2026)</h3>
-          <i>mapping historical master street plans for central arkansas to determine difference between planned and constructed roads.</i>
+          <i class="desc">mapping historical master street plans for central arkansas to determine difference between planned and constructed roads.</i>
           <hr>
           <ul>
             <li><a href='https://mapwarper.net/layers/2599'>little rock master street plan 1959</a></li>
@@ -337,7 +339,7 @@
         </div>
         <div class="section">
           <h3>sherwood precinct boundary redrawing exercise (7/2026)</h3>
-          <i>theoretical precinct boundary redrawing for sherwood, arkansas.</i>
+          <i class="desc">theoretical precinct boundary redrawing for sherwood, arkansas.</i>
           <hr>
           <ul>
             <li><a href='precinct_map.pdf'>precinct map</a></li>
@@ -348,7 +350,7 @@
 
     <div class="section">
       <h3>utilizing genetic algorithms for optimizing a metro network (12/2024)</h3>
-      <i>a research project for a theoretical heavy rail transportation solution in pulaski county, ar.</i>
+      <i class="desc">a research project for a theoretical heavy rail transportation solution in pulaski county, ar.</i>
       <hr>
       <ul>
         <li><a href='research paper.pdf'>research paper</a></li>
@@ -357,7 +359,7 @@
     </div>
     <div class="section">
       <h3>safeblue - a safety api for chicago (2/2026)</h3>
-      <i>an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation.</i>
+      <i class="desc">an open-source api that scrapes the web for real-time crime data in chicago, with an example implementation.</i>
       <hr>
       <ul>
         <li><a href='https://github.com/apizarro18/SafeBlue'>repository</a></li>
@@ -365,7 +367,7 @@
     </div>
     <div class="section">
       <h3>custom mouse project (present)</h3>
-      <i>currently a work in progress, pcb design finished.</i>
+      <i class="desc">currently a work in progress, pcb design finished.</i>
       <hr>
       <ul>
         <li><a href='https://github.com/paulmurphyy/mouse-project'>repository</a></li>
@@ -373,7 +375,7 @@
     </div>
     <div class="section">
       <h3>schedulemyshift.com - a reflex work scheduler (12/2025)</h3>
-      <i>previously deployed on an aws instance that makes the service available to the web.</i>
+      <i class="desc">previously deployed on an aws instance that makes the service available to the web.</i>
       <hr>
       <ul>
         <li><a href='https://schedulemyshift.com'>webapp</a></li>
@@ -393,19 +395,23 @@
     <script>
       (() => {
         const root = document.documentElement,
+              bg   = document.getElementById('bg'),
               vid  = document.getElementById('bgvid'),
               img  = document.getElementById('bgimg'),
               btn  = document.getElementById('bgtoggle'),
+              still = matchMedia('(prefers-reduced-motion: reduce)'),
               ls   = (k, v) => {
                 try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); }
                 catch (e) {}
               };
 
-        if (!CSS.supports('animation-timeline: scroll()')) {
-          const bg = document.getElementById('bg');
+        // fallback for browsers without scroll-driven animations; the CSS handles the rest.
+        // both paths must honour reduced motion, and both use the --parallax travel distance.
+        if (!CSS.supports('animation-timeline: scroll()') && !still.matches) {
+          const PARALLAX = 0.4;
           addEventListener('scroll', () => {
             const max = root.scrollHeight - innerHeight;
-            const y = (max > 0 ? scrollY / max : 0) * innerHeight * 0.4;
+            const y = (max > 0 ? scrollY / max : 0) * innerHeight * PARALLAX;
             bg.style.transform = `translate3d(0, ${-y}px, 0)`;
           }, { passive: true });
         }
@@ -415,14 +421,20 @@
         vid.addEventListener('playing', hide);
         vid.addEventListener('seeked', hide);
 
+        // one frame, one snapshot: the toggle, pause, visibilitychange and pagehide
+        // paths all fire back-to-back for the same frame, and each capture costs a
+        // readback off the decoder plus a synchronous JPEG encode.
+        const POSTER_W = 1280;
+        let snappedAt = -1;
         const snap = () => {
-          if (vid.readyState < 2 || !vid.videoWidth) return;
+          if (vid.readyState < 2 || !vid.videoWidth || vid.currentTime === snappedAt) return;
           try {
             const c = document.createElement('canvas');
-            c.width = 1280;
-            c.height = Math.round(1280 * vid.videoHeight / vid.videoWidth);
+            c.width = POSTER_W;
+            c.height = Math.round(POSTER_W * vid.videoHeight / vid.videoWidth);
             c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
             ls('bg-poster', c.toDataURL('image/jpeg', 0.8));
+            snappedAt = vid.currentTime;
           } catch (e) {}
         };
 
@@ -461,77 +473,79 @@
         btn.addEventListener('click', () => setMode(root.dataset.bg === 'photo' ? 'video' : 'photo'));
 
         const audio = document.getElementById('bgmusic'),
-          mbtn  = document.getElementById('musictoggle'),
-          ask   = document.getElementById('musicask');
+              mbtn  = document.getElementById('musictoggle'),
+              ask   = document.getElementById('musicask');
 
-    let fadeRaf = 0;
-    const fadeIn = () => {
-      cancelAnimationFrame(fadeRaf);
-      const t0 = performance.now(), DUR = 3000;   // 1.5s ramp, no sudden start
-      const step = (t) => {
-        const p = Math.min((t - t0) / DUR, 1);
-        audio.volume = p * 0.55;
-        fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
-      };
-      fadeRaf = requestAnimationFrame(step);
-    };
+        const FADE_MS = 3000, PEAK_VOLUME = 0.55;
+        let fadeRaf = 0;
+        const fadeIn = () => {
+          cancelAnimationFrame(fadeRaf);
+          const t0 = performance.now();   // ramp up over FADE_MS so it never starts abruptly
+          const step = (t) => {
+            const p = Math.min((t - t0) / FADE_MS, 1);
+            audio.volume = p * PEAK_VOLUME;
+            fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
+          };
+          fadeRaf = requestAnimationFrame(step);
+        };
 
-    // button state follows the element, not our guess about what play() did
-    const reflect = () => {
-      const on = !audio.paused;
-      mbtn.classList.toggle('playing', on);
-      mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
-    };
-    audio.addEventListener('play', reflect);
-    audio.addEventListener('pause', reflect);
+        // button state follows the element, not our guess about what play() did
+        const reflect = () => {
+          const on = !audio.paused;
+          mbtn.classList.toggle('playing', on);
+          mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
+        };
+        audio.addEventListener('play', reflect);
+        audio.addEventListener('pause', reflect);
 
-    const play = () => { audio.volume = 0; return audio.play().then(fadeIn); };
+        const play = () => { audio.volume = 0; return audio.play().then(fadeIn); };
 
-    const setMusic = (on) => {
-      ls('music-pref', on ? 'on' : 'off');
-      if (on) return play().catch(() => {});
-      cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause();
-    };
+        // sole writer of music-pref, so the stored preference can't disagree with the element
+        const setMusic = (on) => {
+          ls('music-pref', on ? 'on' : 'off');
+          if (on) return play().catch(() => {});
+          cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause();
+        };
 
-    mbtn.addEventListener('click', () => setMusic(audio.paused));
+        mbtn.addEventListener('click', () => setMusic(audio.paused));
 
-    // retry on the next real gesture; only stop listening once it actually plays.
-    // touchend/click grant activation on mobile — pointerdown does not.
-    const arm = () => {
-      const evts = ['click', 'touchend', 'keydown'];
-      const off = () => evts.forEach((e) => removeEventListener(e, go));
-      const go = () => play().then(off).catch(() => {});
-      evts.forEach((e) => addEventListener(e, go));
-    };
+        // retry on the next real gesture; only stop listening once it actually plays.
+        // touchend/click grant activation on mobile — pointerdown does not.
+        const arm = () => {
+          const evts = ['click', 'touchend', 'keydown'];
+          const off = () => evts.forEach((e) => removeEventListener(e, go));
+          const go = () => play().then(off).catch(() => {});
+          evts.forEach((e) => addEventListener(e, go));
+        };
 
-    const closeAsk = (pref) => {
-      ls('music-pref', pref);
-      ask.removeAttribute('data-shown');
-      setTimeout(() => { ask.hidden = true; }, 400);
-    };
-    document.getElementById('musicyes').addEventListener('click', () => {
-      closeAsk('on'); setMusic(true);
-    });
-    document.getElementById('musicno').addEventListener('click', () => closeAsk('off'));
-    addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !ask.hidden) closeAsk('off');
-    });
+        const closeAsk = () => {
+          ask.removeAttribute('data-shown');
+          setTimeout(() => { ask.hidden = true; }, 400);   // matches #musicask transition (.4s)
+        };
+        const answerAsk = (on) => { closeAsk(); setMusic(on); };
+        document.getElementById('musicyes').addEventListener('click', () => answerAsk(true));
+        document.getElementById('musicno').addEventListener('click', () => answerAsk(false));
+        // data-shown is set once the prompt is visible and cleared the moment it's
+        // answered, so escape can't re-answer a prompt that's already on its way out
+        addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && ask.hasAttribute('data-shown')) answerAsk(false);
+        });
 
-    const musicPref = ls('music-pref');
-    if (musicPref === 'on') {
-      play().catch(arm);          // returning listener: no prompt, just resume
-    } else if (!musicPref) {
-      ask.hidden = false;         // first visit: ask
-      setTimeout(() => ask.setAttribute('data-shown', ''), 900);
-    }
-    reflect();
+        const musicPref = ls('music-pref');
+        if (musicPref === 'on') {
+          play().catch(arm);          // returning listener: no prompt, just resume
+        } else if (!musicPref) {
+          ask.hidden = false;         // first visit: ask
+          setTimeout(() => ask.setAttribute('data-shown', ''), 900);
+        }
+        reflect();
 
         document.querySelectorAll('.rail').forEach((rail) => {
           let x = 0, left = 0, moved = 0, down = false;
           let vx = 0, lastX = 0, lastT = 0, raf = 0;
 
           const stop = () => {
-            if (raf) cancelAnimationFrame(raf);
+            cancelAnimationFrame(raf);
             raf = 0; vx = 0;
             rail.classList.remove('momentum');
           };
@@ -580,15 +594,16 @@
           }, true);
         });
 
-        if (matchMedia('(pointer: fine)').matches &&
-            !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (matchMedia('(pointer: fine)').matches && !still.matches) {
           const MAX = 14;
           let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
           const step = () => {
             cx += (tx - cx) * 0.08;
             cy += (ty - cy) * 0.08;
-            root.style.setProperty('--mx', cx.toFixed(2) + 'px');
-            root.style.setProperty('--my', cy.toFixed(2) + 'px');
+            // set on #bg, not :root — an inherited custom property changing on the root
+            // invalidates style for every element on the page, every frame
+            bg.style.setProperty('--mx', cx.toFixed(2) + 'px');
+            bg.style.setProperty('--my', cy.toFixed(2) + 'px');
             raf = Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1 ? requestAnimationFrame(step) : 0;
           };
           addEventListener('pointermove', (e) => {
