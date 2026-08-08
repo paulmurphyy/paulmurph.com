@@ -461,10 +461,10 @@
     let fadeRaf = 0;
     const fadeIn = () => {
       cancelAnimationFrame(fadeRaf);
-      const t0 = performance.now(), DUR = 1500;   // 1.5s ramp, no sudden start
+      const t0 = performance.now(), DUR = 3000;   // 1.5s ramp, no sudden start
       const step = (t) => {
         const p = Math.min((t - t0) / DUR, 1);
-        audio.volume = p;
+        audio.volume = p * 0.55;
         fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
       };
       fadeRaf = requestAnimationFrame(step);
