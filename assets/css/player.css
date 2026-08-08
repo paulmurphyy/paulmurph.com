@@ -1,0 +1,293 @@
+/* the record player. it drives #bgmusic — the same element behind the header
+   toggle — so there is only ever one thing making sound.
+   radii, spacing and tints all come from main.css so this reads as part of the
+   same site rather than a widget dropped into it. */
+
+/* --art is the cover's side and the height of the card: the controls and the
+   volume column are both sized off it, so nothing else can stretch the row and
+   leave the cover short. --slide and --reveal are the record's travel and the
+   way it travels, shared with the body so the two move as one. --p and --v are
+   the played and volume fractions, written by player.js.
+   all of it lives on .player so every child can read it.
+   the section holding this has no padding of its own (main.css) — the cover is
+   its left edge — so the padding for the side the art doesn't reach is here. */
+.player {
+  --art: clamp(8.75rem, 19vw, 11.25rem);
+  --slide: calc(var(--art) * .4);
+  --reveal: .7s cubic-bezier(.22, .68, .24, 1);
+  /* one weight for both rails and both handles: --rail is the thickness of
+     every one of them, so nothing can end up heavier than anything else.
+     the handle being exactly as thick as its rail also centres it on zero.
+     8px lands on whole device pixels at 1x, 1.5x and 2x — 5px did not, and
+     a horizontal box and a vertical one rounded it differently. */
+  --rail: .5rem;
+  --thumb: 1rem;   /* the handle, along the rail */
+  --p: 0;
+  --v: .55;
+  display: flex; align-items: center; gap: calc(var(--gap) * 2);
+  padding-right: var(--pad);
+}
+
+/* art -------------------------------------------------------------------- */
+
+/* wide enough to leave the record somewhere to go, but the overhang is pulled
+   back in while the record is home — so the body sits against the cover, and
+   the two slide out and back together on the same curve */
+.player-art {
+  position: relative; flex: none;
+  width: calc(var(--art) + var(--slide)); height: var(--art);
+  margin-right: calc(var(--slide) * -1);
+  transition: margin-right var(--reveal);
+}
+.player.playing .player-art { margin-right: 0; }
+
+/* same radius as the card, so the two corners it shares with it line up */
+.cover {
+  position: absolute; top: 0; left: 0; z-index: 1;
+  width: var(--art); height: var(--art);
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: url("../img/timely.jpg") center / cover no-repeat;
+  box-shadow: 0 6px 18px rgb(0 0 0 / .5), inset 0 0 0 1px rgb(255 255 255 / .1);
+}
+
+/* the slide is a transition on `translate`, the spin an animation on `rotate`.
+   separate properties, so neither one clobbers the other. */
+.record {
+  position: absolute; top: 0; left: 0; z-index: 0;
+  width: var(--art); height: var(--art);
+  background: url("../img/vinyl.png") center / contain no-repeat;
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / .55));
+  translate: 0 0;
+  transition: translate var(--reveal);
+  animation: spin 3.6s linear infinite;
+  animation-play-state: paused;
+}
+.player.playing .record { translate: var(--slide) 0; animation-play-state: running; }
+
+@keyframes spin { to { rotate: 360deg; } }
+
+/* the name plate sits on the cover, same tint as the header chrome */
+.track-meta {
+  --inset: .375rem;
+  position: absolute; right: var(--inset); bottom: var(--inset); z-index: 2;
+  max-width: calc(100% - var(--inset) * 2);
+  padding: .3em .55em; border-radius: var(--radius); text-align: right;
+  background: var(--chrome);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+}
+.track-name, .track-artist {
+  margin: 0; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.track-name { font-size: .82rem; color: var(--text-bright); }
+.track-artist { font-size: .72rem; color: var(--text-muted); }
+
+/* controls --------------------------------------------------------------- */
+
+.player-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.seek { display: flex; flex-direction: column; }
+.seek-times {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; line-height: 1.6; color: var(--text-muted);
+}
+.seek-times p { margin: 0; }
+
+/* the rail and its icon share a column as tall as the cover, so the volume
+   control ends level with the art instead of setting the card's height */
+.player-volume {
+  flex: none; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--pad); padding: var(--pad) 0;
+}
+
+/* rails ------------------------------------------------------------------ */
+
+/* a rail is three things stacked in one box: the empty groove (::before), the
+   fill (::after) and the input, whose own track is transparent and only
+   carries the handle. drawing the fill as a real box rather than a gradient
+   stop is what lets its end be rounded the way the handle is. */
+.seek-track, .volume-track { position: relative; }
+.seek-track { height: var(--rail); }
+.volume-track { flex: 1; min-height: 0; width: var(--rail); }
+
+.seek-track::before, .seek-track::after,
+.volume-track::before, .volume-track::after {
+  content: ""; position: absolute; border-radius: calc(var(--rail) / 2);
+}
+.seek-track::before, .seek-track::after { top: 0; left: 0; height: 100%; }
+.volume-track::before, .volume-track::after { bottom: 0; left: 0; width: 100%; }
+
+/* the groove sits well below the fill: both are --text-muted, so the only
+   thing separating them is this alpha — 22% read as nearly the same bar,
+   14% keeps them apart */
+.seek-track::before, .volume-track::before {
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+}
+.seek-track::before { width: 100%; }
+.volume-track::before { height: 100%; }
+
+/* the fill ends exactly where the handle does. the handle's travel is the rail
+   less its own length, so the fill has to carry that length as an offset —
+   without it the two only agree at the middle of the rail. */
+.seek-track::after, .volume-track::after { background: var(--text-muted); }
+.seek-track::after { width: calc(var(--p) * (100% - var(--thumb)) + var(--thumb)); }
+.volume-track::after { height: calc(var(--v) * (100% - var(--thumb)) + var(--thumb)); }
+
+/* selectors carry `.player input` so they outrank water.css's
+   input[type="range"], which otherwise wins on specificity. three of its
+   declarations have to be undone by name or they leak through: the :active
+   nudge and its easing, which is the flinch when you click a rail; box-shadow,
+   which reads as a border on the handle; and the handle's own margin, which
+   knocks it off centre. */
+/* the input lies over its wrapper rather than in it: a vertical range has a
+   chunky intrinsic length, and in flow that length — not the cover — would be
+   what sets the card's height. z-index clears ::after, which is a later
+   sibling and would otherwise cover the handle. */
+.player input.seek-slider, .player input.volume-slider {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  box-sizing: border-box; position: absolute; inset: 0; z-index: 1;
+  margin: 0; padding: 0; border: none; background: transparent; cursor: pointer;
+  transform: none; transition: none;
+}
+.player input.seek-slider:active, .player input.volume-slider:active { transform: none; }
+.player input.volume-slider { writing-mode: vertical-rl; direction: rtl; }
+
+/* the input contributes the handle and nothing else */
+.player input.seek-slider::-webkit-slider-runnable-track,
+.player input.volume-slider::-webkit-slider-runnable-track,
+.player input.seek-slider::-moz-range-track,
+.player input.volume-slider::-moz-range-track,
+.player input.seek-slider::-moz-range-progress,
+.player input.volume-slider::-moz-range-progress {
+  width: 100%; height: 100%;
+  border: none; box-shadow: none; transition: none; background: transparent;
+}
+/* !important is deliberate: chrome's modern slider paints a track band from a
+   UA rule that a plain author background can't beat, and that band sat over
+   the fill — the progress looked stuck at zero. the band is not the rail; the
+   rail's groove and fill are the two boxes drawn on the wrapper below. */
+.player input.seek-slider::-webkit-slider-runnable-track,
+.player input.volume-slider::-webkit-slider-runnable-track {
+  background: transparent !important;
+}
+
+/* the handle runs along its rail, so the long side follows the axis the rail
+   does. the thumb's own axes stay physical in vertical writing mode, hence the
+   swap rather than one shared rule. */
+/* margin-top: 1px is a blink rounding fix: with the rail's top landing on a
+   fractional layout unit (flex centering), the thumb is rasterised one
+   device-pixel higher than the groove it sits in, at every dpr. the volume
+   thumb, which moves along the other axis, needs no such nudge. */
+.player input.seek-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: var(--thumb); height: var(--rail); margin: 0;
+  margin-top: 1px;
+  border: none; border-radius: calc(var(--rail) / 2); box-shadow: none;
+  background: var(--text-bright);
+  opacity: 0; transition: opacity .25s ease;
+}
+.player input.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: var(--rail); height: var(--thumb); margin: 0;
+  border: none; border-radius: calc(var(--rail) / 2); box-shadow: none;
+  background: var(--text-bright);
+  opacity: 0; transition: opacity .25s ease;
+}
+.player input.seek-slider::-moz-range-thumb {
+  width: var(--thumb); height: var(--rail);
+  border: none; border-radius: calc(var(--rail) / 2); box-shadow: none;
+  background: var(--text-bright);
+  opacity: 0; transition: opacity .25s ease;
+}
+.player input.volume-slider::-moz-range-thumb {
+  width: var(--rail); height: var(--thumb);
+  border: none; border-radius: calc(var(--rail) / 2); box-shadow: none;
+  background: var(--text-bright);
+  opacity: 0; transition: opacity .25s ease;
+}
+
+.player input.seek-slider:hover::-webkit-slider-thumb,
+.player input.seek-slider:focus-visible::-webkit-slider-thumb,
+.player input.volume-slider:hover::-webkit-slider-thumb,
+.player input.volume-slider:focus-visible::-webkit-slider-thumb { opacity: 1; }
+.player input.seek-slider:hover::-moz-range-thumb,
+.player input.seek-slider:focus-visible::-moz-range-thumb,
+.player input.volume-slider:hover::-moz-range-thumb,
+.player input.volume-slider:focus-visible::-moz-range-thumb { opacity: 1; }
+
+.player input.seek-slider:focus, .player input.volume-slider:focus { box-shadow: none; }
+/* the volume rail runs the height of the card, so the ring stays tight enough
+   to sit inside the column's padding rather than escaping the card */
+.player input.seek-slider:focus-visible, .player input.volume-slider:focus-visible {
+  outline: 2px solid var(--text-muted); outline-offset: .25rem;
+}
+
+/* volume icon ------------------------------------------------------------ */
+
+/* one arc per third of the rail, so the level climbs a step at a time */
+.volume-icon {
+  flex: none; width: 1.1rem; height: 1.1rem; color: var(--text-muted);
+}
+.volume-icon .v-cone {
+  fill: currentColor; stroke: currentColor;
+  stroke-width: .8; stroke-linejoin: round;
+}
+.volume-icon .v-wave, .volume-icon .v-mute {
+  fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round;
+  opacity: 0; transition: opacity .2s ease;
+}
+.volume-icon[data-level="1"] [data-wave="1"],
+.volume-icon[data-level="2"] [data-wave="1"],
+.volume-icon[data-level="2"] [data-wave="2"],
+.volume-icon[data-level="3"] .v-wave,
+.volume-icon[data-level="mute"] .v-mute { opacity: 1; }
+/* muted is still adjustable — it just stops claiming to be audible */
+.player.muted .player-volume { opacity: .35; }
+
+/* buttons ---------------------------------------------------------------- */
+
+/* square, one size, and tinted the way the dropdown's cards are: visible at
+   rest, deepening under the cursor. the play button sits a step further up
+   that same scale, so it still reads as the primary control. */
+.player-buttons { display: flex; align-items: center; gap: var(--gap); }
+.player-buttons button {
+  display: grid; place-items: center;
+  width: 2rem; height: 2rem; padding: 0; margin: 0;
+  border: none; border-radius: var(--radius); cursor: pointer;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--background) 42%, transparent);
+  transition: color .25s ease, background-color .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.player-buttons button i { font-size: .875rem; line-height: 1; }
+.player-buttons button:hover {
+  color: var(--text-bright);
+  background: color-mix(in srgb, var(--background) 66%, transparent);
+}
+.player-buttons button:active { transform: none; }
+.player-buttons button:focus { box-shadow: none; }
+.player-buttons button:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+.player-buttons button:disabled {
+  opacity: .3; cursor: default; color: var(--text-muted);
+  background: color-mix(in srgb, var(--background) 42%, transparent);
+}
+.player-buttons .playpause-track {
+  color: var(--text-bright);
+  background: color-mix(in srgb, var(--background) 66%, transparent);
+}
+.player-buttons .playpause-track:hover {
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+}
+
+/* overrides last: these tie with the base rules and win on source order */
+@media (prefers-reduced-motion: reduce) {
+  .record { animation: none; transition: none; }
+  .player-art { transition: none; }
+}
+@media (max-width: 640px) {
+  /* gaps and padding come from the tokens main.css moves at this width */
+  .player { --art: clamp(6.5rem, 30vw, 8.25rem); }
+  .track-name { font-size: .76rem; }
+  .track-artist { font-size: .68rem; }
+}

@@ -81,27 +81,50 @@
         mbtn  = document.getElementById('musictoggle'),
         ask   = document.getElementById('musicask');
 
-  const FADE_MS = 3000, PEAK_VOLUME = 0.55;
+  const FADE_MS = 3000, DEFAULT_VOLUME = 0.55;
+  const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
+  const stored = parseFloat(ls('music-volume'));
+  let target = isFinite(stored) ? clamp01(stored) : DEFAULT_VOLUME;
+
+  audio.volume = target;
+  audio.muted = ls('music-muted') === 'on';
+
   let fadeRaf = 0;
   const fadeIn = () => {
     cancelAnimationFrame(fadeRaf);
-    const t0 = performance.now();   // ramp up over FADE_MS so it never starts abruptly
+    const from = audio.volume, t0 = performance.now();   // ramp over FADE_MS so it never starts abruptly
     const step = (t) => {
       const p = Math.min((t - t0) / FADE_MS, 1);
-      audio.volume = p * PEAK_VOLUME;
+      audio.volume = from + (target - from) * p;
       fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
     };
     fadeRaf = requestAnimationFrame(step);
   };
 
+  // the record player mirrors mute and volume, and the element's own
+  // volumechange fires on every frame of the fade — too noisy to listen to
+  const announce = () => audio.dispatchEvent(new CustomEvent('musicstate'));
+
   // button state follows the element, not our guess about what play() did
   const reflect = () => {
-    const on = !audio.paused;
-    mbtn.classList.toggle('playing', on);
-    mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
+    mbtn.classList.toggle('muted', audio.muted);
+    mbtn.setAttribute('aria-label', `${audio.muted ? 'unmute' : 'mute'} background music`);
   };
-  audio.addEventListener('play', reflect);
-  audio.addEventListener('pause', reflect);
+
+  const setMuted = (m) => {
+    audio.muted = m;
+    ls('music-muted', m ? 'on' : 'off');
+    reflect();
+    announce();
+  };
+
+  const setVolume = (v) => {
+    target = clamp01(v);
+    ls('music-volume', target);
+    cancelAnimationFrame(fadeRaf); fadeRaf = 0;   // a live drag beats the fade
+    audio.volume = target;
+    announce();
+  };
 
   const play = () => { audio.volume = 0; return audio.play().then(fadeIn); };
 
@@ -112,7 +135,13 @@
     cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause();
   };
 
-  mbtn.addEventListener('click', () => setMusic(audio.paused));
+  // a mute toggle, not a transport control — but unmuting a track that was
+  // never started would be a button that does nothing, so it starts it too
+  mbtn.addEventListener('click', () => {
+    const muted = !audio.muted;
+    setMuted(muted);
+    if (!muted && audio.paused) setMusic(true);
+  });
 
   // retry on the next real gesture; only stop listening once it actually plays.
   // touchend/click grant activation on mobile — pointerdown does not.
@@ -127,7 +156,8 @@
     ask.removeAttribute('data-shown');
     setTimeout(() => { ask.hidden = true; }, 400);   // matches #musicask transition (.4s)
   };
-  const answerAsk = (on) => { closeAsk(); setMusic(on); };
+  // saying yes has to be audible, whatever the mute state was left at
+  const answerAsk = (on) => { closeAsk(); if (on) setMuted(false); setMusic(on); };
   document.getElementById('musicyes').addEventListener('click', () => answerAsk(true));
   document.getElementById('musicno').addEventListener('click', () => answerAsk(false));
   // data-shown is set once the prompt is visible and cleared the moment it's
@@ -135,6 +165,17 @@
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && ask.hasAttribute('data-shown')) answerAsk(false);
   });
+
+  // the record player drives this same element. it goes through setMusic so the
+  // fade-in and the stored preference stay in one place, and so hitting play
+  // down the page answers the prompt instead of leaving it hanging.
+  window.siteMusic = {
+    audio,
+    set: (on) => { if (ask.hasAttribute('data-shown')) closeAsk(); setMusic(on); },
+    mute: setMuted,
+    setVolume,
+    get volume() { return target; },   // the fade target, not the live value
+  };
 
   const musicPref = ls('music-pref');
   if (musicPref === 'on') {
