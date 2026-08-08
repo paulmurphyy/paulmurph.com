@@ -82,6 +82,18 @@
   });
   audio.addEventListener('musicstate', paintVol);
 
+  // the icon is a readout that also toggles the same mute the header owns —
+  // player.js keeps no mute state of its own, so the two can't disagree.
+  // keyboard path included because the svg is now a focusable button.
+  const toggleMute = () => {
+    if (music) music.mute(!audio.muted);
+    else { audio.muted = !audio.muted; paintVol(); }
+  };
+  volIcon.addEventListener('click', toggleMute);
+  volIcon.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMute(); }
+  });
+
   // while a drag is live the element owns the handle: seeking snaps currentTime
   // to what the decoder can actually give us, and writing that back on every
   // timeupdate is what made the handle stutter under the cursor

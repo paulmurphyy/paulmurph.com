@@ -1,4 +1,5 @@
 :root {
+  interpolate-size: allow-keywords;  /* lets height transition to auto, for the details */
   --panel: color-mix(in srgb, var(--background) 70%, transparent);
   --chrome: color-mix(in srgb, var(--background) 62%, transparent);
   --rail-thumb: color-mix(in srgb, var(--text-muted) 40%, transparent);
@@ -79,10 +80,21 @@ details {
   position: relative; display: block; margin: 1em 0; padding: 0;
   overflow: hidden; border-radius: var(--radius);
   background: var(--panel);
+  /* present the moment the dropdown opens — the content expands over a
+     solid panel, not over the video. the closed rule below defers the
+     flip out until the collapse has finished, so neither direction fades */
+  transition: background-color 0s;
 }
 /* closed: drop the details' own tint so it doesn't stack on the summary's.
    the ::before wash below still applies in both states. */
-details:not([open]) { background: transparent; }
+details:not([open]) {
+  background: transparent;
+  /* the flip waits out the collapse: the panel stays behind the closing
+     content and only drops once the box is back to the summary — a 0s
+     duration with a .25s delay, so closing keeps its background the whole
+     way while opening still fades the panel in over the same .25s */
+  transition: background-color 0s .25s;
+}
 details:not([open]) > summary { background: var(--panel); }
 /* beat water.css's details[open] padding and summary margin */
 details[open] { padding: 0; }
@@ -90,6 +102,23 @@ details[open] > summary { margin: 0; }
 details::before {
   content: ""; position: absolute; inset: 0; z-index: -2;
   background: color-mix(in srgb, var(--background) 35%, transparent);
+}
+/* open and close ride the same .25s ease everything else uses. height, not
+   the grid trick: interpolating fr units is choppy in places and the grid
+   collapse never animates closed — height + interpolate-size does both.
+   content-visibility defers the native hide until the collapse finishes:
+   with allow-discrete, visible→hidden flips at the end of the transition,
+   so closing animates instead of vanishing. browsers without
+   interpolate-size fall back to the instant open. */
+details::details-content {
+  height: 0;
+  content-visibility: hidden;
+  overflow: hidden;
+  transition: height .25s ease, content-visibility .25s ease allow-discrete;
+}
+details[open]::details-content {
+  height: auto;
+  content-visibility: visible;
 }
 
 .rail {
@@ -110,9 +139,17 @@ details::before {
 .rail.momentum { scroll-snap-type: none; }
 .rail > .section {
   flex: 0 0 90%; min-width: 0; margin: 0; scroll-snap-align: start;
-  background: color-mix(in srgb, var(--background) 42%, transparent);
+  /* the same hairline the musicask buttons and the player wear */
+  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+  /* see-through cards: the hover blur lives on the ::before wash, a layer of
+     its own, so it keeps working with no tint — the details' tint behind
+     carries the card */
+  background: transparent;
+  transition: border-color .25s ease;
 }
-.rail > .section:hover { background: color-mix(in srgb, var(--background) 66%, transparent); }
+.rail > .section:hover {
+  border-color: var(--text-bright);
+}
 
 details > summary {
   position: relative; display: flex; align-items: center; gap: var(--gap);
@@ -144,10 +181,18 @@ details > summary:hover::after { border-color: var(--text-bright); }
   padding: 0; border: none; border-radius: var(--radius-chrome); cursor: pointer;
   color: var(--text-muted);
   background: var(--chrome);
-  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   transition: background-color .25s ease, color .25s ease;
   -webkit-tap-highlight-color: transparent;
 }
+/* the wash blurs only while hovered, like the cards — at rest the buttons
+   sit on their chrome tint alone */
+#bgtoggle::before, #musictoggle::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit; opacity: 0;
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  transition: opacity .25s ease;
+}
+#bgtoggle:hover::before, #musictoggle:hover::before { opacity: 1; }
 /* stacked under #bgtoggle — derived, so resizing the buttons can't leave them overlapping */
 #musictoggle { top: calc(var(--edge) + var(--btn) + .5rem); }
 #bgtoggle:hover, #musictoggle:hover {
@@ -158,7 +203,7 @@ details > summary:hover::after { border-color: var(--text-bright); }
 #bgtoggle:focus, #musictoggle:focus { box-shadow: none; }
 #bgtoggle:focus-visible, #musictoggle:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
 #bgtoggle i, #musictoggle i {
-  font-size: .95rem; line-height: 1; display: block; color: inherit;
+  font-size: 1rem; line-height: 1; display: block; color: inherit;
 }
 [data-bg="video"] #bgtoggle .i-video,
 [data-bg="photo"] #bgtoggle .i-photo { display: none; }
@@ -209,6 +254,7 @@ details > summary:hover::after { border-color: var(--text-bright); }
   #bg video { display: none; }
   #bg img { scale: 1; translate: none; }
   #musicask { transition: none; }
+  details::details-content { transition: none; }
 }
 @media (max-width: 640px) {
   /* the panels get roomier and everything else tightens: moving the tokens

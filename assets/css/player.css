@@ -13,7 +13,7 @@
    its left edge — so the padding for the side the art doesn't reach is here. */
 .player {
   --art: clamp(8.75rem, 19vw, 11.25rem);
-  --slide: calc(var(--art) * .4);
+  --slide: calc(var(--art) * .5);
   --reveal: .7s cubic-bezier(.22, .68, .24, 1);
   /* one weight for both rails and both handles: --rail is the thickness of
      every one of them, so nothing can end up heavier than anything else.
@@ -37,6 +37,10 @@
   position: relative; flex: none;
   width: calc(var(--art) + var(--slide)); height: var(--art);
   margin-right: calc(var(--slide) * -1);
+  /* the box reaches past the art while the record is out, and its empty
+     stretch sits over the buttons — nothing in here is interactive, so
+     let clicks pass through to the body */
+  pointer-events: none;
   transition: margin-right var(--reveal);
 }
 .player.playing .player-art { margin-right: 0; }
@@ -66,6 +70,24 @@
 
 @keyframes spin { to { rotate: 360deg; } }
 
+/* the album cover as the record's label: a disc of the cover art on the
+   spindle, spinning with the record — a child, so the animation carries it.
+   hidden at rest (the cover sits over it); while playing, the .5 slide
+   leaves half of it clear of the cover's edge. the vinyl image carries its
+   own red label circle at a third of the disc's radius, so the label runs
+   just over that — 35% of the disc — and hides it. */
+.record-label {
+  position: absolute; top: 50%; left: 50%;
+  width: calc(var(--art) * .35); height: calc(var(--art) * .35);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: url("../img/timely.jpg") center / cover no-repeat;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .12);
+  /* the spindle hole, cut out of the art */
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 7%, black 7.5%);
+  mask: radial-gradient(circle closest-side, transparent 0 7%, black 7.5%);
+}
+
 /* the name plate sits on the cover, same tint as the header chrome */
 .track-meta {
   --inset: .375rem;
@@ -84,7 +106,7 @@
 
 /* controls --------------------------------------------------------------- */
 
-.player-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.player-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--gap); }
 
 .seek { display: flex; flex-direction: column; }
 .seek-times {
@@ -94,10 +116,13 @@
 .seek-times p { margin: 0; }
 
 /* the rail and its icon share a column as tall as the cover, so the volume
-   control ends level with the art instead of setting the card's height */
+   control ends level with the art instead of setting the card's height.
+   the rail is capped below the card's height and the column packs to the
+   bottom, so the slider is shorter — trimmed from the top, icon anchored. */
 .player-volume {
   flex: none; align-self: stretch;
   display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end;
   gap: var(--pad); padding: var(--pad) 0;
 }
 
@@ -109,7 +134,15 @@
    stop is what lets its end be rounded the way the handle is. */
 .seek-track, .volume-track { position: relative; }
 .seek-track { height: var(--rail); }
-.volume-track { flex: 1; min-height: 0; width: var(--rail); }
+/* the rail used to be a fixed fraction of the art, but its chrome — the
+   icon, the gap and the column padding — is fixed, so on small screens the
+   column outgrew the art and stretched the card past the cover. subtract
+   the chrome instead: the rail is whatever is left of the art. */
+.volume-track {
+  flex: none;
+  height: calc(var(--art) - var(--pad) * 2 - var(--gap) - 1.2rem);
+  width: var(--rail);
+}
 
 .seek-track::before, .seek-track::after,
 .volume-track::before, .volume-track::after {
@@ -225,18 +258,30 @@
 
 /* volume icon ------------------------------------------------------------ */
 
-/* one arc per third of the rail, so the level climbs a step at a time */
+/* a custom speaker: font awesome has only one- and three-arc speakers, so
+   the two-arc middle state has to be drawn. the paths are font awesome's own
+   solid geometry (6.5.2) split one arc per path, so the glyphs are the same
+   shapes the header renders — the box matches the icon's real 640:512 box,
+   so at 1rem it sits beside the header's 1rem icons at the same size. */
 .volume-icon {
-  flex: none; width: 1.1rem; height: 1.1rem; color: var(--text-muted);
+  flex: none; display: block; width: 1.4rem; height: 1.12rem;
+  color: var(--text-muted); cursor: pointer;
+  transition: color .25s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.volume-icon .v-cone {
-  fill: currentColor; stroke: currentColor;
-  stroke-width: .8; stroke-linejoin: round;
+.volume-icon:hover { color: var(--text-bright); }
+/* no ring on click or keyboard — water.css paints box-shadows on focus for
+   buttons and inputs, and the UA paints a default outline on a focused svg.
+   the hover brightening is the whole affordance. */
+.volume-icon:focus, .volume-icon:focus-visible { outline: none; box-shadow: none; }
+/* solid fills, like the font — no strokes */
+.volume-icon .v-cone, .volume-icon .v-wave, .volume-icon .v-mute {
+  fill: currentColor;
 }
 .volume-icon .v-wave, .volume-icon .v-mute {
-  fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round;
   opacity: 0; transition: opacity .2s ease;
 }
+/* one arc per bar — the two-arc middle state is waves 1 and 2 */
 .volume-icon[data-level="1"] [data-wave="1"],
 .volume-icon[data-level="2"] [data-wave="1"],
 .volume-icon[data-level="2"] [data-wave="2"],
@@ -254,15 +299,18 @@
 .player-buttons button {
   display: grid; place-items: center;
   width: 2rem; height: 2rem; padding: 0; margin: 0;
-  border: none; border-radius: var(--radius); cursor: pointer;
+  /* the same hairline the musicask buttons wear */
+  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+  border-radius: var(--radius); cursor: pointer;
   color: var(--text-muted);
   background: color-mix(in srgb, var(--background) 42%, transparent);
-  transition: color .25s ease, background-color .25s ease;
+  transition: color .25s ease, background-color .25s ease, border-color .25s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.player-buttons button i { font-size: .875rem; line-height: 1; }
+.player-buttons button i { font-size: 1rem; line-height: 1; }
 .player-buttons button:hover {
   color: var(--text-bright);
+  border-color: var(--text-bright);
   background: color-mix(in srgb, var(--background) 66%, transparent);
 }
 .player-buttons button:active { transform: none; }

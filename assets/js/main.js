@@ -87,7 +87,10 @@
   let target = isFinite(stored) ? clamp01(stored) : DEFAULT_VOLUME;
 
   audio.volume = target;
-  audio.muted = ls('music-muted') === 'on';
+  /* start out muted: the prompt is the only way in. nothing plays until the
+     visitor answers, and a no stays muted even if the record player starts.
+     mute no longer persists — the stored write was dropped with the read. */
+  audio.muted = true;
 
   let fadeRaf = 0;
   const fadeIn = () => {
@@ -113,7 +116,6 @@
 
   const setMuted = (m) => {
     audio.muted = m;
-    ls('music-muted', m ? 'on' : 'off');
     reflect();
     announce();
   };
