@@ -75,7 +75,7 @@
       }
       .section:hover::before, details > summary:hover::before,
       details[open] > summary::before { opacity: 1; }
-
+      .credits i { display: inline; }
       details {
         position: relative; display: block; margin: 1em 0; padding: 0;
         overflow: hidden; border-radius: 6px;
@@ -260,7 +260,6 @@
     <audio id="bgmusic" src="driving-my-love.mp3" loop preload="auto"></audio>
     <div id="musicask" role="dialog" aria-labelledby="musicasktext" hidden>
   <p id="musicasktext">play background music?</p>
-  <p class="track">“driving my love” — anri, 1983</p>
   <div class="row">
     <button id="musicyes" type="button">play</button>
     <button id="musicno" type="button">no thanks</button>
