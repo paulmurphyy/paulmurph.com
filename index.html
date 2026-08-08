@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#111111">
     <title>paulmurph.com</title>
     <script>
       try {
@@ -133,7 +137,7 @@
       details[open] > summary::after { transform: translate(0, 35%) rotate(225deg); }
       details > summary:hover::after { border-color: var(--text-bright); }
 
-      #bgtoggle {
+      #bgtoggle, #musictoggle {
         position: fixed; top: 14px; right: 14px; z-index: 5;
         width: 34px; height: 34px; display: grid; place-items: center;
         padding: 0; border: none; border-radius: 8px; cursor: pointer;
@@ -143,20 +147,22 @@
         transition: background-color .25s ease, color .25s ease;
         -webkit-tap-highlight-color: transparent;
       }
-      #bgtoggle:hover {
+      #musictoggle { top: 56px; }
+      #bgtoggle:hover, #musictoggle:hover {
         background: color-mix(in srgb, var(--background) 82%, transparent);
         color: var(--text-bright);
       }
-      #bgtoggle:active { transform: none; }
-      #bgtoggle:focus { box-shadow: none; }
-      #bgtoggle:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
-      #bgtoggle svg {
+      #bgtoggle:active, #musictoggle:active { transform: none; }
+      #bgtoggle:focus, #musictoggle:focus { box-shadow: none; }
+      #bgtoggle:focus-visible, #musictoggle:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+      #bgtoggle svg, #musictoggle svg {
         width: 17px; height: 17px; display: block; fill: none;
         stroke: currentColor; stroke-width: 1.7;
         stroke-linecap: round; stroke-linejoin: round;
       }
       [data-bg="video"] #bgtoggle .i-video,
       [data-bg="photo"] #bgtoggle .i-photo { display: none; }
+      #musictoggle .i-muted, #musictoggle.playing .i-note { display: none; }
 
       .credits {
         margin: 2em 0 1.5em; font-size: .8rem; line-height: 1.75; color: var(--text-muted);
@@ -177,6 +183,7 @@
         .rail { gap: 10px; padding: 10px; scroll-padding-left: 10px; }
         details > summary { padding: 12px; gap: 10px; }
         #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
+        #musictoggle { top: 52px; right: 10px; width: 38px; height: 38px; }
       }
     </style>
   </head>
@@ -200,6 +207,20 @@
         <path d="M10.2 9.4 15 12l-4.8 2.6z" fill="currentColor"/>
       </svg>
     </button>
+
+    <button id="musictoggle" type="button" aria-label="play background music">
+      <svg class="i-note" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 18V5.5l10-2v12"/>
+        <circle cx="6.5" cy="18" r="2.5"/>
+        <circle cx="16.5" cy="15.5" r="2.5"/>
+      </svg>
+      <svg class="i-muted" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 9v6h4l5 4V5L8 9z"/>
+        <path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>
+      </svg>
+    </button>
+
+    <audio id="bgmusic" src="driving-my-love.mp3" loop preload="auto"></audio>
 
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
@@ -315,6 +336,7 @@
         filmed between shimbashi and toyosu in tokyo, japan.</p>
       <p>background photo taken in shizuoka, japan — an n700 shinkansen passing mt. fuji
         and the shibazakura in bloom, may 2017.</p>
+      <p>background music: “driving my love” by anri (from <i>timely!!</i>, 1983).</p>
     </footer>
 
     <script>
@@ -386,6 +408,38 @@
 
         setMode(root.dataset.bg);
         btn.addEventListener('click', () => setMode(root.dataset.bg === 'photo' ? 'video' : 'photo'));
+
+        const audio = document.getElementById('bgmusic'),
+              mbtn = document.getElementById('musictoggle');
+        let fadeRaf = 0;
+        const fadeIn = () => {
+          cancelAnimationFrame(fadeRaf);
+          const t0 = performance.now(), DUR = 1500; // 1.5s ramp, no sudden start
+          const step = (t) => {
+            const p = Math.min((t - t0) / DUR, 1);
+            audio.volume = p;
+            fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
+          };
+          fadeRaf = requestAnimationFrame(step);
+        };
+        const setMusic = (on) => {
+          if (!on) { cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause(); }
+          else { audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
+          mbtn.classList.toggle('playing', on);
+          mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
+          ls('music', on ? 'on' : 'off');
+        };
+        mbtn.addEventListener('click', () => setMusic(!audio.paused));
+        if (ls('music') !== 'off') {
+          const start = () => { setMusic(true); removeEventListener('pointerdown', start); removeEventListener('keydown', start); };
+          // autoplay allowed once user has interacted with domain (or installed PWA);
+          // first-ever visit: blocked, so start on first click/keypress instead
+          audio.volume = 0;
+          audio.play().then(fadeIn).catch(() => {
+            addEventListener('pointerdown', start);
+            addEventListener('keydown', start);
+          });
+        }
 
         document.querySelectorAll('.rail').forEach((rail) => {
           let x = 0, left = 0, moved = 0, down = false;
