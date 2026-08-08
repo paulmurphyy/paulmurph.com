@@ -172,6 +172,7 @@
       .credits a:hover { color: var(--text-bright); }
 
       @media (max-width: 640px) {
+        #musicask { right: 10px; bottom: 10px; }
         body { margin: 12px auto; padding: 0 12px; }
         h1 { font-size: 1.6rem; margin: 0 46px .3em 0; }
         h2 { font-size: 1.05rem; }
@@ -185,6 +186,42 @@
         #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
         #musictoggle { top: 52px; right: 10px; width: 38px; height: 38px; }
       }
+      #musicask {
+  position: fixed; right: 14px; bottom: 14px; z-index: 6;
+  box-sizing: border-box;
+  max-width: min(19rem, calc(100vw - 28px));
+  padding: 12px 14px; border-radius: 8px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--background) 62%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font-size: .88rem; line-height: 1.6;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+#musicask[data-shown] { opacity: 1; transform: none; }
+#musicask[hidden] { display: none; }
+#musicask p { margin: 0; }
+#musicask .track { margin-top: 2px; font-size: .8rem; opacity: .72; }
+#musicask .row { display: flex; gap: 8px; margin-top: 12px; }
+
+#musicask button {
+  font: inherit; font-size: .85rem; margin: 0; padding: 5px 12px;
+  border-radius: 6px; cursor: pointer;
+  color: var(--text-muted); background: transparent;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+  transition: color .25s ease, border-color .25s ease, background-color .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#musicask button:hover {
+  color: var(--text-bright); border-color: var(--text-bright);
+  background: color-mix(in srgb, var(--background) 45%, transparent);
+}
+#musicask button:focus { box-shadow: none; }
+#musicask button:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  #musicask { transition: none; }
+}
     </style>
   </head>
   <body>
@@ -221,7 +258,14 @@
     </button>
 
     <audio id="bgmusic" src="driving-my-love.mp3" loop preload="auto"></audio>
-
+    <div id="musicask" role="dialog" aria-labelledby="musicasktext" hidden>
+  <p id="musicasktext">play background music?</p>
+  <p class="track">“driving my love” — anri, 1983</p>
+  <div class="row">
+    <button id="musicyes" type="button">play</button>
+    <button id="musicno" type="button">no thanks</button>
+  </div>
+</div>
     <h1>paulmurph.com</h1>
     <h2>a website for my personal projects.</h2>
 
@@ -410,36 +454,70 @@
         btn.addEventListener('click', () => setMode(root.dataset.bg === 'photo' ? 'video' : 'photo'));
 
         const audio = document.getElementById('bgmusic'),
-              mbtn = document.getElementById('musictoggle');
-        let fadeRaf = 0;
-        const fadeIn = () => {
-          cancelAnimationFrame(fadeRaf);
-          const t0 = performance.now(), DUR = 1500; // 1.5s ramp, no sudden start
-          const step = (t) => {
-            const p = Math.min((t - t0) / DUR, 1);
-            audio.volume = p;
-            fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
-          };
-          fadeRaf = requestAnimationFrame(step);
-        };
-        const setMusic = (on) => {
-          if (!on) { cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause(); }
-          else { audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
-          mbtn.classList.toggle('playing', on);
-          mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
-          ls('music', on ? 'on' : 'off');
-        };
-        mbtn.addEventListener('click', () => setMusic(!audio.paused));
-        if (ls('music') !== 'off') {
-          const start = () => { setMusic(true); removeEventListener('pointerdown', start); removeEventListener('keydown', start); };
-          // autoplay allowed once user has interacted with domain (or installed PWA);
-          // first-ever visit: blocked, so start on first click/keypress instead
-          audio.volume = 0;
-          audio.play().then(fadeIn).catch(() => {
-            addEventListener('pointerdown', start);
-            addEventListener('keydown', start);
-          });
-        }
+          mbtn  = document.getElementById('musictoggle'),
+          ask   = document.getElementById('musicask');
+
+    let fadeRaf = 0;
+    const fadeIn = () => {
+      cancelAnimationFrame(fadeRaf);
+      const t0 = performance.now(), DUR = 1500;   // 1.5s ramp, no sudden start
+      const step = (t) => {
+        const p = Math.min((t - t0) / DUR, 1);
+        audio.volume = p;
+        fadeRaf = p < 1 ? requestAnimationFrame(step) : 0;
+      };
+      fadeRaf = requestAnimationFrame(step);
+    };
+
+    // button state follows the element, not our guess about what play() did
+    const reflect = () => {
+      const on = !audio.paused;
+      mbtn.classList.toggle('playing', on);
+      mbtn.setAttribute('aria-label', on ? 'mute background music' : 'play background music');
+    };
+    audio.addEventListener('play', reflect);
+    audio.addEventListener('pause', reflect);
+
+    const play = () => { audio.volume = 0; return audio.play().then(fadeIn); };
+
+    const setMusic = (on) => {
+      ls('music', on ? 'on' : 'off');
+      if (on) return play().catch(() => {});
+      cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause();
+    };
+
+    mbtn.addEventListener('click', () => setMusic(audio.paused));
+
+    // retry on the next real gesture; only stop listening once it actually plays.
+    // touchend/click grant activation on mobile — pointerdown does not.
+    const arm = () => {
+      const evts = ['click', 'touchend', 'keydown'];
+      const off = () => evts.forEach((e) => removeEventListener(e, go));
+      const go = () => play().then(off).catch(() => {});
+      evts.forEach((e) => addEventListener(e, go));
+    };
+
+    const closeAsk = (pref) => {
+      ls('music', pref);
+      ask.removeAttribute('data-shown');
+      setTimeout(() => { ask.hidden = true; }, 400);
+    };
+    document.getElementById('musicyes').addEventListener('click', () => {
+      closeAsk('on'); setMusic(true);
+    });
+    document.getElementById('musicno').addEventListener('click', () => closeAsk('off'));
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !ask.hidden) closeAsk('off');
+    });
+
+    const musicPref = ls('music');
+    if (musicPref === 'on') {
+      play().catch(arm);          // returning listener: no prompt, just resume
+    } else if (!musicPref) {
+      ask.hidden = false;         // first visit: ask
+      setTimeout(() => ask.setAttribute('data-shown', ''), 900);
+    }
+    reflect();
 
         document.querySelectorAll('.rail').forEach((rail) => {
           let x = 0, left = 0, moved = 0, down = false;
