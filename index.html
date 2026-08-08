@@ -480,7 +480,7 @@
     const play = () => { audio.volume = 0; return audio.play().then(fadeIn); };
 
     const setMusic = (on) => {
-      ls('music', on ? 'on' : 'off');
+      ls('music-pref', on ? 'on' : 'off');
       if (on) return play().catch(() => {});
       cancelAnimationFrame(fadeRaf); fadeRaf = 0; audio.pause();
     };
@@ -497,7 +497,7 @@
     };
 
     const closeAsk = (pref) => {
-      ls('music', pref);
+      ls('music-pref', pref);
       ask.removeAttribute('data-shown');
       setTimeout(() => { ask.hidden = true; }, 400);
     };
@@ -509,7 +509,7 @@
       if (e.key === 'Escape' && !ask.hidden) closeAsk('off');
     });
 
-    const musicPref = ls('music');
+    const musicPref = ls('music-pref');
     if (musicPref === 'on') {
       play().catch(arm);          // returning listener: no prompt, just resume
     } else if (!musicPref) {
