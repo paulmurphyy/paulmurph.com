@@ -81,6 +81,11 @@
         overflow: hidden; border-radius: 6px;
         background: color-mix(in srgb, var(--background) 70%, transparent);
       }
+      /* closed: summary is the only visible layer — no stacked backgrounds */
+      details:not([open]) { background: transparent; }
+      details:not([open]) > summary {
+        background: color-mix(in srgb, var(--background) 70%, transparent);
+      }
       /* beat water.css's details[open] padding and summary margin */
       details[open] { padding: 0; }
       details[open] > summary { margin: 0; }
@@ -174,7 +179,6 @@
       .credits a:hover { color: var(--text-bright); }
 
       @media (max-width: 640px) {
-        #musicask { right: 10px; bottom: 10px; }
         body { margin: 12px auto; padding: 0 12px; }
         h1 { font-size: 1.6rem; margin: 0 46px .3em 0; }
         h2 { font-size: 1.05rem; }
@@ -224,6 +228,8 @@
 @media (prefers-reduced-motion: reduce) {
   #musicask { transition: none; }
 }
+/* mobile placement — must come after the base #musicask rules or it's overridden */
+@media (max-width: 640px) { #musicask { right: 10px; bottom: 10px; } }
     </style>
   </head>
   <body>
