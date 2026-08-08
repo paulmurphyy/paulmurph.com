@@ -168,11 +168,15 @@
       down = true; moved = 0; x = e.clientX; left = rail.scrollLeft;
       lastX = e.clientX; lastT = performance.now();
       rail.classList.add('dragging');
-      rail.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
-    rail.addEventListener('pointermove', (e) => {
+    // tracked on the document rather than through setPointerCapture: a captured
+    // pointer retargets the click to the rail, so links inside it never activate.
+    // buttons === 0 covers the release that capture used to catch — one that
+    // happens outside the window, where no pointerup ever reaches us.
+    document.addEventListener('pointermove', (e) => {
       if (!down) return;
+      if (!e.buttons) { end(); return; }
       const d = e.clientX - x;
       moved = Math.max(moved, Math.abs(d));
       rail.scrollLeft = left - d;
@@ -180,19 +184,18 @@
       if (dt > 0) vx = -(e.clientX - lastX) / dt * 16.67; // scroll px per 60fps frame
       lastX = e.clientX; lastT = now;
     });
-    const end = (e) => {
+    const end = () => {
       if (!down) return;
       down = false;
       rail.classList.remove('dragging');
-      if (rail.hasPointerCapture(e.pointerId)) rail.releasePointerCapture(e.pointerId);
       if (Math.abs(vx) > 1.5) {
         if (Math.abs(vx) > 40) vx = Math.sign(vx) * 40; // clamp fling speed
         rail.classList.add('momentum');
         raf = requestAnimationFrame(step);
       }
     };
-    rail.addEventListener('pointerup', end);
-    rail.addEventListener('pointercancel', end);
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
     rail.addEventListener('wheel', stop, { passive: true });
     rail.addEventListener('click', (e) => {
       if (moved > 5) { e.preventDefault(); e.stopPropagation(); }
