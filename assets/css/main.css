@@ -1,0 +1,214 @@
+:root {
+  --panel: color-mix(in srgb, var(--background) 70%, transparent);
+  --chrome: color-mix(in srgb, var(--background) 62%, transparent);
+  --rail-thumb: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  --blur: blur(8px);
+  --parallax: -40vh;  /* background travel — the JS fallback mirrors this */
+}
+
+body {
+  background: transparent;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+  overflow-x: hidden;
+}
+
+#bg { position: fixed; inset: var(--parallax) 0; z-index: -3; overflow: hidden; background: #111; }
+#bg::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(rgb(0 0 0 / .65), rgb(0 0 0 / .45));
+}
+#bg video, #bg img, #bgposter {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  scale: 1.06; translate: var(--mx, 0px) var(--my, 0px);
+  transition: opacity .45s ease;
+}
+[data-bg="video"] #bgimg, [data-bg="photo"] #bgvid { opacity: 0; }
+#bgposter { background: var(--poster) center / cover no-repeat; }
+[data-bg="photo"] #bgposter, #bgposter.gone { opacity: 0; }
+
+@supports (animation-timeline: scroll()) {
+  #bg { animation: parallax linear both; animation-timeline: scroll(root); }
+}
+@keyframes parallax { to { translate: 0 var(--parallax); } }
+
+ul { list-style-type: none; padding-left: 20px; }
+ul li::before { content: "-"; margin-right: 5px; }
+h3 { display: inline; }
+hr { margin: 8px 0 16px; }
+
+/* the one-line blurb under each project heading */
+.desc { display: block; }
+
+.section {
+  position: relative; box-sizing: border-box;
+  padding: 10px; margin: 1em 0; border-radius: 6px;
+  background: var(--panel);
+  transition: background-color .25s ease;
+}
+.section:hover { background: color-mix(in srgb, var(--background) 78%, transparent); }
+
+.section::before, details > summary::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit; opacity: 0;
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  transition: opacity .25s ease;
+}
+.section:hover::before, details > summary:hover::before,
+details[open] > summary::before { opacity: 1; }
+
+details {
+  position: relative; display: block; margin: 1em 0; padding: 0;
+  overflow: hidden; border-radius: 6px;
+  background: var(--panel);
+}
+/* closed: drop the details' own tint so it doesn't stack on the summary's.
+   the ::before wash below still applies in both states. */
+details:not([open]) { background: transparent; }
+details:not([open]) > summary { background: var(--panel); }
+/* beat water.css's details[open] padding and summary margin */
+details[open] { padding: 0; }
+details[open] > summary { margin: 0; }
+details::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background: color-mix(in srgb, var(--background) 35%, transparent);
+}
+
+.rail {
+  display: flex; align-items: stretch; gap: 12px; padding: 12px;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; scroll-padding-left: 12px;
+  -webkit-overflow-scrolling: touch; cursor: grab;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rail-thumb) transparent;
+}
+.rail::-webkit-scrollbar { height: 8px; }
+.rail::-webkit-scrollbar-track { background: transparent; }
+.rail::-webkit-scrollbar-thumb { border-radius: 4px; background: var(--rail-thumb); }
+.rail::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+}
+.rail.dragging { cursor: grabbing; scroll-snap-type: none; }
+.rail.momentum { scroll-snap-type: none; }
+.rail > .section {
+  flex: 0 0 90%; min-width: 0; margin: 0; scroll-snap-align: start;
+  background: color-mix(in srgb, var(--background) 42%, transparent);
+}
+.rail > .section:hover { background: color-mix(in srgb, var(--background) 66%, transparent); }
+
+details > summary {
+  position: relative; display: flex; align-items: center; gap: 14px;
+  list-style: none; margin: 0; padding: 10px; cursor: pointer;
+  background: color-mix(in srgb, var(--background) 57%, transparent);
+  transition: background-color .25s ease;
+}
+details > summary:hover, details[open] > summary {
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+}
+summary:hover, summary:focus { text-decoration: none; }
+details > summary h3 { margin: 0; }
+details > summary::-webkit-details-marker { display: none; }
+
+details > summary::after {
+  content: ""; flex: none; margin-left: auto; width: 8px; height: 8px;
+  border-right: 1.5px solid var(--text-muted);
+  border-bottom: 1.5px solid var(--text-muted);
+  border-radius: 0 0 1.5px 0;
+  transform: translate(0, -35%) rotate(45deg);
+  transition: transform .25s ease, border-color .25s ease;
+}
+details[open] > summary::after { transform: translate(0, 35%) rotate(225deg); }
+details > summary:hover::after { border-color: var(--text-bright); }
+
+#bgtoggle, #musictoggle {
+  position: fixed; top: 14px; right: 14px; z-index: 5;
+  width: 34px; height: 34px; display: grid; place-items: center;
+  padding: 0; border: none; border-radius: 8px; cursor: pointer;
+  color: var(--text-muted);
+  background: var(--chrome);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  transition: background-color .25s ease, color .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#musictoggle { top: 56px; }
+#bgtoggle:hover, #musictoggle:hover {
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  color: var(--text-bright);
+}
+#bgtoggle:active, #musictoggle:active { transform: none; }
+#bgtoggle:focus, #musictoggle:focus { box-shadow: none; }
+#bgtoggle:focus-visible, #musictoggle:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+#bgtoggle svg, #musictoggle svg {
+  width: 17px; height: 17px; display: block; fill: none;
+  stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+[data-bg="video"] #bgtoggle .i-video,
+[data-bg="photo"] #bgtoggle .i-photo { display: none; }
+#musictoggle:not(.playing) .i-note,
+#musictoggle.playing .i-muted { display: none; }
+
+#musicask {
+  position: fixed; right: 14px; bottom: 14px; z-index: 6;
+  box-sizing: border-box;
+  max-width: min(19rem, calc(100vw - 28px));
+  padding: 12px 14px; border-radius: 8px;
+  color: var(--text-muted);
+  background: var(--chrome);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font-size: .88rem; line-height: 1.6;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+#musicask[data-shown] { opacity: 1; transform: none; }
+#musicask[hidden] { display: none; }
+#musicask p { margin: 0; }
+#musicask .row { display: flex; gap: 8px; margin-top: 12px; }
+#musicask button {
+  font: inherit; font-size: .85rem; margin: 0; padding: 5px 12px;
+  border-radius: 6px; cursor: pointer;
+  color: var(--text-muted); background: transparent;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+  transition: color .25s ease, border-color .25s ease, background-color .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#musicask button:hover {
+  color: var(--text-bright); border-color: var(--text-bright);
+  background: color-mix(in srgb, var(--background) 45%, transparent);
+}
+#musicask button:focus { box-shadow: none; }
+#musicask button:focus-visible { box-shadow: 0 0 0 2px var(--text-muted); }
+
+.credits {
+  margin: 2em 0 1.5em; font-size: .8rem; line-height: 1.75; color: var(--text-muted);
+}
+.credits p { margin: 0; }
+.credits a { color: var(--text-muted); text-underline-offset: 2px; }
+.credits a:hover { color: var(--text-bright); }
+
+/* overrides last: these tie with the base rules on specificity and win on source order */
+@media (prefers-reduced-motion: reduce) {
+  #bg { animation: none; }
+  #bg video { display: none; }
+  #bg img { scale: 1; translate: none; }
+  #musicask { transition: none; }
+}
+@media (max-width: 640px) {
+  body { margin: 12px auto; padding: 0 12px; }
+  h1 { font-size: 1.6rem; margin: 0 46px .3em 0; }
+  h2 { font-size: 1.05rem; }
+  h3 { font-size: .98rem; }
+  .desc { font-size: .92rem; }
+  ul { padding-left: 10px; }
+  li { margin: .35em 0; }
+  .section { padding: 12px; }
+  .rail { gap: 10px; padding: 10px; scroll-padding-left: 10px; }
+  details > summary { padding: 12px; gap: 10px; }
+  #bgtoggle { top: 10px; right: 10px; width: 38px; height: 38px; }
+  #musictoggle { top: 52px; right: 10px; width: 38px; height: 38px; }
+  #musicask { right: 10px; bottom: 10px; }
+}
