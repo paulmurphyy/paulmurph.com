@@ -38,8 +38,8 @@
 
   const setPlay = (on) => {
     if (music) { music.set(on); return; }
-    if (on) audio.play().catch(() => {});
-    else audio.pause();
+    if (on) { audio.play().catch(() => {}); }
+    else { audio.pause(); }
   };
 
   // state follows the element, not our guess about what play() did — the header
@@ -157,7 +157,16 @@
     if (resume) setPlay(true);
   };
 
-  playBtn.addEventListener('click', () => setPlay(audio.paused));
+  // starting answers the mute the way the header toggle and the prompt's yes
+  // do — a muted track would spin the vinyl in silence. next/prev while
+  // playing are not starts, so they leave the mute alone.
+  playBtn.addEventListener('click', () => {
+    if (audio.paused && audio.muted) {
+      if (music) music.mute(false);
+      else { audio.muted = false; paintVol(); }
+    }
+    setPlay(audio.paused);
+  });
 
   // with a single track there is nowhere to go back to, so prev just restarts
   prevBtn.addEventListener('click', () => {
