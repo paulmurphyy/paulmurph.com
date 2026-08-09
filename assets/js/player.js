@@ -36,9 +36,11 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   };
 
-  const setPlay = (on) => music
-    ? music.set(on)
-    : (on ? audio.play().catch(() => {}) : audio.pause());
+  const setPlay = (on) => {
+    if (music) { music.set(on); return; }
+    if (on) audio.play().catch(() => {});
+    else audio.pause();
+  };
 
   // state follows the element, not our guess about what play() did — the header
   // toggle and the prompt can both move it out from under us
@@ -58,11 +60,13 @@
 
   // the speaker lights one more arc per third of the rail, and drops all three
   // for a cross once muted — the level it would return to is still on the rail
-  const levelFor = (v) => audio.muted ? 'mute'
-    : v === 0 ? '0'
-    : v < 34 ? '1'
-    : v < 67 ? '2'
-    : '3';
+  const levelFor = (v) => {
+    if (audio.muted) return 'mute';
+    if (v === 0) return '0';
+    if (v < 34) return '1';
+    if (v < 67) return '2';
+    return '3';
+  };
 
   // volume reads from the fade target, so the rail doesn't crawl up during a fade
   const paintVol = () => {
@@ -76,9 +80,14 @@
   };
   vol.addEventListener('input', () => {
     const v = Number(vol.value) / 100;
-    if (music) music.setVolume(v); else audio.volume = v;
-    if (audio.muted && v > 0) music ? music.mute(false) : (audio.muted = false);
-    paintVol();
+    if (music) {
+      music.setVolume(v);                        // setVolume announces — paintVol follows
+      if (audio.muted && v > 0) music.mute(false);
+    } else {
+      audio.volume = v;
+      if (audio.muted && v > 0) audio.muted = false;
+      paintVol();
+    }
   });
   audio.addEventListener('musicstate', paintVol);
 
@@ -99,8 +108,9 @@
   // timeupdate is what made the handle stutter under the cursor
   let scrubbing = false;
   slider.addEventListener('pointerdown', () => { scrubbing = true; });
-  addEventListener('pointerup', () => { scrubbing = false; });
-  addEventListener('pointercancel', () => { scrubbing = false; });
+  const endScrub = () => { scrubbing = false; };
+  addEventListener('pointerup', endScrub);
+  addEventListener('pointercancel', endScrub);
 
   const paint = () => {
     const d = audio.duration;
